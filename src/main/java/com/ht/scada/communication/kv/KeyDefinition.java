@@ -7,9 +7,9 @@
 
 package com.ht.scada.communication.kv;
 
-import com.ht.scada.common.data.FaultRecord;
-import com.ht.scada.common.data.OffLimitsRecord;
-import com.ht.scada.common.data.YXData;
+import com.ht.scada.data.kv.FaultRecord;
+import com.ht.scada.data.kv.OffLimitsRecord;
+import com.ht.scada.data.kv.YXData;
 import oracle.kv.Key;
 import org.joda.time.LocalDateTime;
 
@@ -102,7 +102,7 @@ public class KeyDefinition {
         final List<String> majorPath = key.getMajorPath();
 
         if (!YX_RECORD.equals(majorPath.get(1))) {
-            throw new IllegalArgumentException("Not a yx data: " + key);
+            throw new IllegalArgumentException("Not a yx kv: " + key);
         }
 
         data.setCode(majorPath.get(2));

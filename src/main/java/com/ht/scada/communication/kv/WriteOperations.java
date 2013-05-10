@@ -83,7 +83,7 @@ import java.util.concurrent.TimeUnit;
  * As an illustration of the difference in semantics, imagine a store that is
  * idle except for a single client thread that is performing KVStore.get and
  * deleteIfVersion calls (the method in this class).  We also guarantee that no
- * data migration takes place in this test, since data migration changes record
+ * kv migration takes place in this test, since kv migration changes record
  * versions as if another client performed an update.  In this test, one might
  * assume that the deleteIfVersion method should always return true, since no
  * other clients are accessing the store.  However, this is an incorrect
@@ -91,7 +91,7 @@ import java.util.concurrent.TimeUnit;
  * will eventually occur, and deleteIfVersion will return false due to
  * scenarios such as the one described above.  This may be an unexpected
  * outcome in such a test scenario, but should be expected in a real world
- * application due to other client activity and data migration, as well as
+ * application due to other client activity and kv migration, as well as
  * network failures.
  * <p>
  * The following example is also noteworthy.  Imagine that {@link #putIfVersion
@@ -339,7 +339,7 @@ public class WriteOperations {
      * <p>
      * WARNING: A putIfVersion operation should not be used to perform a
      * self-check because the KVStore system may internally assign a new
-     * Version to a Key/Value pair when migrating data for better resource
+     * Version to a Key/Value pair when migrating kv for better resource
      * usage.  One should never assume that only the application can change the
      * Version of a Key/Value pair.
      */
@@ -442,7 +442,7 @@ public class WriteOperations {
      * <p>
      * WARNING: A deleteIfVersion operation should not be used to perform a
      * self-check because the KVStore system may internally assign a new
-     * Version to a Key/Value pair when migrating data for better resource
+     * Version to a Key/Value pair when migrating kv for better resource
      * usage.  One should never assume that only the application can change the
      * Version of a Key/Value pair.
      */

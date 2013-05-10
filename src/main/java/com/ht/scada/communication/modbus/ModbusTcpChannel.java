@@ -14,22 +14,24 @@ import com.ht.scada.common.tag.util.PortInfoFactory;
 import com.ht.scada.common.tag.util.PortInfoFactory.DtuInfo;
 import com.ht.scada.common.tag.util.PortInfoFactory.TcpIpInfo;
 import com.ht.scada.communication.CommunicationChannel;
-import com.ht.scada.communication.model.EndTagWrapper;
-import com.ht.scada.communication.model.TagVar;
+import com.ht.scada.communication.model.*;
 import com.ht.scada.communication.util.DataValueUtil;
 
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class ModbusTcpChannel extends CommunicationChannel {
 	private boolean running = false;
-	private Thread thread;
-	
+    private ScheduledExecutorService executorService;
+
 	private ModbusMaster master;
 	private List<ModbusFrame> frameList;
 	
-	public ModbusTcpChannel(AcquisitionChannel channel) throws Exception {
-		super(channel);
+	public ModbusTcpChannel(AcquisitionChannel channel, List<EndTagWrapper> endTagList) throws Exception {
+		super(channel, endTagList);
 	}
 
 	@Override
@@ -52,59 +54,69 @@ public class ModbusTcpChannel extends CommunicationChannel {
 	public void start() {
 		if(master != null) {
 			running = true;
-			thread = new Thread(this);
-			thread.start();
+            executorService = Executors.newSingleThreadScheduledExecutor();
+
+            // 解析通讯帧并生成数据存储区域
+            for (final ModbusFrame frame : frameList) {
+                if (frame.interval > 0) {
+                    executorService.scheduleAtFixedRate(new Runnable() {
+                        @Override
+                        public void run() {
+                            executeFrame(frame);
+                        }
+                    }, 0, frame.interval, TimeUnit.MILLISECONDS);
+                } else {
+                    executorService.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            executeFrame(frame);
+                        }
+                    });
+                }
+            }
 		}
 		
 	}
-	
-	@Override
-	public void execute() {
-		// 解析通讯帧并生成数据存储区域
-		for (final ModbusFrame frame : frameList) {
-			
-			int[][] slaveArray = frame.slave;
-			for (int[] slaveRange : slaveArray) {
-				if (!running) {
-					break;
-				}
-				
-				int slaveStart = slaveRange[0];
-				int slaveEnd = slaveRange[1];
-				if (slaveEnd > 0) {// 地址范围
-					for (int i = slaveStart; i <= slaveEnd; i++) {
-						if (!running) {
-							break;
-						}
-						try {
-							final IModbusReadResponse resp = master.sendReadRequest(i, frame.funCode, frame.start, frame.len);
-							handleResponse(i, frame.funCode, frame.start, frame.len, resp);
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-					}
-				} else {// 只启用起始地址
-					try {
-						IModbusReadResponse resp = master.sendReadRequest(slaveStart, frame.funCode, frame.start, frame.len);
-						handleResponse(slaveStart, frame.funCode, frame.start, frame.len, resp);
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-						
-				}
-			}
-		}
-	}
-	
-	@Override
-	public void run() {
 
-		while(running) {
-			execute();
-		}
-	}
+    private void executeFrame(ModbusFrame frame) {
+        int[][] slaveArray = frame.slave;
+        for (int[] slaveRange : slaveArray) {
+            if (!running) {
+                break;
+            }
 
-	/**
+            int slaveStart = slaveRange[0];
+            int slaveEnd = slaveRange[1];
+            if (slaveEnd > 0) {// 地址范围
+                for (int i = slaveStart; i <= slaveEnd; i++) {
+                    if (!running) {
+                        break;
+                    }
+                    try {
+                        final IModbusReadResponse resp = master.sendReadRequest(i, frame.funCode, frame.start, frame.len);
+                        handleResponse(i, frame.funCode, frame.start, frame.len, resp);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            } else {// 只启用起始地址
+                try {
+                    IModbusReadResponse resp = master.sendReadRequest(slaveStart, frame.funCode, frame.start, frame.len);
+                    handleResponse(slaveStart, frame.funCode, frame.start, frame.len, resp);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
+    }
+
+    /**
 	 * @param slaveID
 	 * @param resp
 	 */
@@ -114,114 +126,109 @@ public class ModbusTcpChannel extends CommunicationChannel {
 		if (funCode == 3 || funCode == 4) {// 读二进制数据
 			final byte[] respData = resp.getByteArray();
 			
-			forEachTagVar(slaveID, funCode, datetime, Boolean.class, new DataHandler<Boolean>() {
-				@Override
-				public Boolean each(EndTagWrapper model, TagVar var) {
-					TagCfgTpl tpl = var.tpl;
-					if (tpl.getDataType() == DataType.BOOL && tpl.getBitOffset() >= 0) {
-						int index = tpl.getDataID() - start;
-						if (tpl.getFunCode() != funCode || index < 0 || index + tpl.getByteLen() / 2 >= len) {
-							return null;
-						}
-					
-						return DataValueUtil.parseBoolValue(respData, index * 2 + tpl.getByteOffset(), tpl.getBitOffset());
-					} else {
-						return null;
-					}
-				}
-			});
+			forEachYxTagVar(slaveID, new DataHandler<YxTagVar>() {
+                @Override
+                public boolean each(EndTagWrapper model, YxTagVar var) {
+                    TagCfgTpl tpl = var.tpl;
+                    if (tpl.getDataType() == DataType.BOOL && tpl.getBitOffset() >= 0) {
+                        int index = tpl.getDataID() - start;
+                        if (tpl.getFunCode() != funCode || index < 0 || index + tpl.getByteLen() / 2 >= len) {
+                            return true;
+                        }
+                        var.update(DataValueUtil.parseBoolValue(respData, index * 2 + tpl.getByteOffset(), tpl.getBitOffset()), datetime, realtimeDataMap);
+                    }
+                    return true;
+                }
+            });
 			
-			forEachTagVar(slaveID, funCode, datetime, Float.class, new DataHandler<Float>() {
-				@Override
-				public Float each(EndTagWrapper model, TagVar var) {
-					
-					TagCfgTpl tpl = var.tpl;
-					
-					float value = Float.NaN;
-					int index = tpl.getDataID() - start;
-					if (tpl.getFunCode() != funCode || index < 0 || index + tpl.getByteLen() / 2 >= len) {
-						return value;
-					}
-					
-					switch (tpl.getDataType()) {
-					case INT16:
-						int int16 = DataValueUtil.parseInt16(respData, index * 2 + tpl.getByteOffset());
-						value = int16 * tpl.getCoefValue() + tpl.getBaseValue();
-						break;
-					case FLOAT:
-						float floatValue = DataValueUtil.parseFloatValue(respData, index * 2 + tpl.getByteOffset());
-						value = floatValue * tpl.getCoefValue() + tpl.getBaseValue();
-						break;
-					default:
-						break;
-					}
-					return value;
-				}
-			});
-			forEachTagVar(slaveID, funCode, datetime, Double.class, new DataHandler<Double>() {
-				@Override
-				public Double each(EndTagWrapper model, TagVar var) {
-					
-					TagCfgTpl tpl = var.tpl;
-					
-					double value = Double.NaN;
-					int index = tpl.getDataID() - start;
-					if (tpl.getFunCode() != funCode || index < 0 || index + tpl.getByteLen() / 2 >= len) {
-						return value;
-					}
-					
-					switch (tpl.getDataType()) {
-					case INT32:
-						int int32 = DataValueUtil.parseInt32(respData, index * 2 + tpl.getByteOffset());
-						value = int32 * tpl.getCoefValue() + tpl.getBaseValue();
-						break;
-					case DOUBLE:
-						double doubleValue = DataValueUtil.parseDoubleValue(respData, index * 2 + tpl.getByteOffset());
-						value = doubleValue * tpl.getCoefValue() + tpl.getBaseValue();
-					case MOD10000:
-						int mod10000 = DataValueUtil.parseMod10000(respData, index * 2 + tpl.getByteOffset());
-						value = mod10000 * tpl.getCoefValue() + tpl.getBaseValue();
-						break;
-					default:
-						break;
-					}
-					return value;
-				}
-			});
+			forEachYcTagVar(slaveID, new DataHandler<YcTagVar>() {
+                @Override
+                public boolean each(EndTagWrapper model, YcTagVar var) {
+
+                    TagCfgTpl tpl = var.tpl;
+
+                    float value = Float.NaN;
+                    int index = tpl.getDataID() - start;
+                    if (tpl.getFunCode() != funCode || index < 0 || index + tpl.getByteLen() / 2 >= len) {
+                        return true;
+                    }
+
+                    switch (tpl.getDataType()) {
+                        case INT16:
+                            int int16 = DataValueUtil.parseInt16(respData, index * 2 + tpl.getByteOffset());
+                            var.update(int16 * tpl.getCoefValue() + tpl.getBaseValue(), datetime, realtimeDataMap);
+                            break;
+                        case FLOAT:
+                            float floatValue = DataValueUtil.parseFloatValue(respData, index * 2 + tpl.getByteOffset());
+                            var.update(floatValue * tpl.getCoefValue() + tpl.getBaseValue(), datetime, realtimeDataMap);
+                            break;
+                        default:
+                            break;
+                    }
+                    return true;
+                }
+            });
+			forEachYmTagVar(slaveID, new DataHandler<YmTagVar>() {
+                @Override
+                public boolean each(EndTagWrapper model, YmTagVar var) {
+
+                    TagCfgTpl tpl = var.tpl;
+
+                    double value = Double.NaN;
+                    int index = tpl.getDataID() - start;
+                    if (tpl.getFunCode() != funCode || index < 0 || index + tpl.getByteLen() / 2 >= len) {
+                        return true;
+                    }
+
+                    switch (tpl.getDataType()) {
+                        case INT32:
+                            int int32 = DataValueUtil.parseInt32(respData, index * 2 + tpl.getByteOffset());
+                            var.update(int32 * tpl.getCoefValue() + tpl.getBaseValue(), datetime, realtimeDataMap);
+                            break;
+                        case DOUBLE:
+                            double doubleValue = DataValueUtil.parseDoubleValue(respData, index * 2 + tpl.getByteOffset());
+                            var.update(doubleValue * tpl.getCoefValue() + tpl.getBaseValue(), datetime, realtimeDataMap);
+                        case MOD10000:
+                            int mod10000 = DataValueUtil.parseMod10000(respData, index * 2 + tpl.getByteOffset());
+                            var.update(mod10000 * tpl.getCoefValue() + tpl.getBaseValue(), datetime, realtimeDataMap);
+                            break;
+                        default:
+                            break;
+                    }
+                    return true;
+                }
+            });
 		} else if (funCode == 1 || funCode == 2) {// 读遥信数据
 			final boolean[] respData = resp.getBooleanResultArray();
 			if (respData == null) {
 				return;
 			}
 			
-			forEachTagVar(slaveID, funCode, datetime, Boolean.class, new DataHandler<Boolean>() {
-				@Override
-				public Boolean each(EndTagWrapper model, TagVar var) {
-					TagCfgTpl tpl = var.tpl; 
-					if (tpl.getDataType() == DataType.BOOL) {
-						
-						if (tpl.getFunCode() != funCode) {
-							return null;
-						}
-						int index = tpl.getDataID() - start;
-						if (index >= 0 && index < respData.length) {
-							return respData[index];
-						} else {
-							return null;
-						}
-					} else {
-						return null;
-					}
-				}
-			});
+			forEachYxTagVar(slaveID, new DataHandler<YxTagVar>() {
+                @Override
+                public boolean each(EndTagWrapper model, YxTagVar var) {
+                    TagCfgTpl tpl = var.tpl;
+                    if (tpl.getDataType() == DataType.BOOL) {
+
+                        if (tpl.getFunCode() != funCode) {
+                            return true;
+                        }
+                        int index = tpl.getDataID() - start;
+                        if (index >= 0 && index < respData.length) {
+                            var.update(respData[index], datetime, realtimeDataMap);
+                        }
+                    }
+                    return true;
+                }
+            });
 		}
 	}
 
 	@Override
 	public void stop() {
 		running = false;
-		if (thread != null) {
-			thread.interrupt();
+		if (executorService != null) {
+            executorService.shutdownNow();
 		}
 		if (master != null) {
 			master.close();
@@ -229,12 +236,14 @@ public class ModbusTcpChannel extends CommunicationChannel {
 	}
 
 	@Override
-	public boolean exeYK(int dataID, boolean value) {
+	public boolean exeYK(int deviceAddr, int dataID, boolean value) {
+        // TODO: Modbus遥控未实现
 		return false;
 	}
 
 	@Override
-	public boolean exeYT(int dataID, int value) {
+	public boolean exeYT(int deviceAddr, int dataID, int value) {
+        // TODO: Modbus遥调未实现
 		return false;
 	}
 

@@ -17,4 +17,6 @@ public interface IService {
      * 停止服务
      */
     void stop();
+
+    boolean isRunning();
 }

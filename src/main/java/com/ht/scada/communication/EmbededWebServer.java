@@ -5,8 +5,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 public class EmbededWebServer {
 	public static void main(String[] args) throws Exception {
-		int port = 8080;
-		Server server = new Server(port);
+		Server server = new Server(Config.INSTANCE.getWebPort());
 		
 		String wardir = "src/webapp";
 		

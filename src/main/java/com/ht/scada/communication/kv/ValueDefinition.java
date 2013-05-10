@@ -1,6 +1,6 @@
 package com.ht.scada.communication.kv;
 
-import com.ht.scada.common.data.*;
+import com.ht.scada.data.kv.*;
 import oracle.kv.Value;
 
 import java.io.*;
@@ -194,11 +194,11 @@ public class ValueDefinition {
 //		final ByteArrayInputStream bais = new ByteArrayInputStream(value.getValue());
 //        final DataInputStream dis = new DataInputStream(bais);
 //        try {
-//			data.setValue(dis.readDouble());
-//			data.setChange(dis.readDouble());
+//			kv.setValue(dis.readDouble());
+//			kv.setChange(dis.readDouble());
 //		} catch (IOException e) {
 //            throw new RuntimeException(e);
 //		}
-//        return data;
+//        return kv;
 	}
 }

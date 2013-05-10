@@ -1,9 +1,9 @@
 package com.ht.scada.communication.service;
 
-import com.ht.scada.data.data.FaultRecord;
-import com.ht.scada.data.data.OffLimitsRecord;
-import com.ht.scada.data.data.VarGroupData;
-import com.ht.scada.data.data.YXData;
+import com.ht.scada.data.kv.FaultRecord;
+import com.ht.scada.data.kv.OffLimitsRecord;
+import com.ht.scada.data.kv.VarGroupData;
+import com.ht.scada.data.kv.YXData;
 
 import java.util.Date;
 import java.util.List;

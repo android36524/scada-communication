@@ -27,9 +27,11 @@
 
 	<!-- 使用annotation 自动注册bean, 并保证@Required、@Autowired的属性被注入 -->
 	<context:annotation-config/>
-	<context:component-scan base-package="com.ht.scada.common.tag.service.impl, com.ht.scada.communication">
-		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
-	</context:component-scan>
+    <context:component-scan
+            base-package="com.ht.scada.common.tag.service.impl, com.ht.scada.data.service.impl,
+            com.ht.scada.communication, com.ht.scada.communication.cluser">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
 	
 	<!-- Jpa Entity Manager 配置 : JDNI name for EntityManagerFactory is defined in src/main/resources/META-INF/persistence.xml -->
 <!--     <jee:jndi-lookup jndi-name="java:jboss/spring-quickstart/persistence" id="entityManagerFactory"

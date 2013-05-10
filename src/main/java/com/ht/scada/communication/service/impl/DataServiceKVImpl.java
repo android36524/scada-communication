@@ -5,7 +5,7 @@ import com.ht.scada.communication.kv.RunOperation;
 import com.ht.scada.communication.kv.ValueDefinition;
 import com.ht.scada.communication.kv.WriteOperations;
 import com.ht.scada.communication.service.DataService;
-import com.ht.scada.data.data.*;
+import com.ht.scada.data.kv.*;
 import oracle.kv.*;
 import org.joda.time.LocalDateTime;
 

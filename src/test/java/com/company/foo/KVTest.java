@@ -1,21 +1,15 @@
 package com.company.foo;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import com.ht.scada.common.tag.util.VarGroup;
+import com.ht.scada.data.kv.VarGroupData;
+import org.xerial.snappy.Snappy;
+
+import java.io.*;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
-import org.xerial.snappy.Snappy;
-
-import com.ht.scada.common.data.VarGroupData;
-import com.ht.scada.common.tag.util.VarGroup;
 
 public class KVTest {
 

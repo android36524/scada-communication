@@ -1,9 +1,9 @@
 package com.ht.scada.communication.iec104;
 
+import com.ht.scada.common.tag.entity.AcquisitionChannel;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import com.ht.scada.common.tag.entity.AcquisitionChannel;
 
 public class IEC104ChannelTest {
 
@@ -17,7 +17,7 @@ public class IEC104ChannelTest {
 	  List<IEC104Channel> channelList = new ArrayList<>();
 	  long start = System.currentTimeMillis();
 	  for (int i = 0; i < 100; i++) {
-		  IEC104Channel commChannel = new IEC104Channel(channel);
+		  IEC104Channel commChannel = new IEC104Channel(channel, null);
 		  channelList.add(commChannel);
 		  commChannel.start();
 //	  Thread.sleep(100);

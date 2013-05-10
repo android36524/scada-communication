@@ -4,3 +4,9 @@
 *.jar
 *.war
 *.ear
+/log
+/target
+/test-output
+/.settings
+/.idea
+/lib

@@ -18,9 +18,7 @@ public class EndTagDaoImpl extends BaseDaoImpl<EndTag> implements EndTagDao {
     public List<EndTag> getAll() {
         List<EndTag> list = null;
         try {
-            list = query(EndTag.class, "SELECT id, name, code, type, subtype AS subType, tpl_name AS tplName, " +
-                    "channel_idx AS channelIndex, device_addr AS deviceAddr " +
-                    "from T_End_Tag WHERE channel_idx IS NOT NULL AND device_addr IS NOT NULL");
+            list = query(EndTag.class, "SELECT * from T_End_Tag WHERE channel_idx IS NOT NULL AND device_addr IS NOT NULL");
         } catch (SQLException e) {
             e.printStackTrace();
             list = new ArrayList<EndTag>();

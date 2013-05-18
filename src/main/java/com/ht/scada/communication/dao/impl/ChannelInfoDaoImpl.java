@@ -18,9 +18,7 @@ public class ChannelInfoDaoImpl extends BaseDaoImpl<ChannelInfo> implements Chan
     public List<ChannelInfo> getAll() {
         List<ChannelInfo> list = null;
         try {
-            list = query(ChannelInfo.class, "SELECT id, idx, name, protocal, offline, " +
-                    "acquisition_interval as intvl, port_info as portInfo, frames " +
-                    "from T_Acquisition_Channel WHERE idx IS NOT NULL");
+            list = query(ChannelInfo.class, "SELECT * from T_Acquisition_Channel WHERE idx IS NOT NULL");
         } catch (SQLException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
             list = new ArrayList<ChannelInfo>();

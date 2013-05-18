@@ -18,7 +18,7 @@ public class VarGroupDaoImpl extends BaseDaoImpl<VarGroupInfo> implements VarGro
     public List<VarGroupInfo> getAll() {
         List<VarGroupInfo> list = null;
         try {
-            list = query(VarGroupInfo.class, "SELECT id, name, storage_interval as intvl from T_Var_Group_Cfg");
+            list = query(VarGroupInfo.class, "SELECT * from T_Var_Group_Cfg");
         } catch (SQLException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
             list = new ArrayList<VarGroupInfo>();

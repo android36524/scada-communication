@@ -1,7 +1,5 @@
 package com.ht.scada.communication.util;
 
-import com.ht.scada.common.tag.util.VarGroup;
-
 import java.util.Calendar;
 
 /**

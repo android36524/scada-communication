@@ -4,34 +4,36 @@ import com.ht.modbus.ModbusMaster;
 import com.ht.modbus.dtu.DTUMaster;
 import com.ht.modbus.msg.response.IModbusReadResponse;
 import com.ht.modbus.tcp.TCPMaster;
-import com.ht.scada.common.tag.entity.AcquisitionChannel;
-import com.ht.scada.common.tag.entity.TagCfgTpl;
-import com.ht.scada.common.tag.exception.PortInfoErrorException;
-import com.ht.scada.common.tag.util.ChannelFrameFactory;
-import com.ht.scada.common.tag.util.ChannelFrameFactory.ModbusFrame;
-import com.ht.scada.common.tag.util.DataType;
-import com.ht.scada.common.tag.util.PortInfoFactory;
-import com.ht.scada.common.tag.util.PortInfoFactory.DtuInfo;
-import com.ht.scada.common.tag.util.PortInfoFactory.TcpIpInfo;
 import com.ht.scada.communication.CommunicationChannel;
-import com.ht.scada.communication.model.*;
+import com.ht.scada.communication.entity.ChannelInfo;
+import com.ht.scada.communication.entity.TagVarTpl;
+import com.ht.scada.communication.model.EndTagWrapper;
+import com.ht.scada.communication.model.YcTagVar;
+import com.ht.scada.communication.model.YmTagVar;
+import com.ht.scada.communication.model.YxTagVar;
+import com.ht.scada.communication.util.ChannelFrameFactory;
+import com.ht.scada.communication.util.ChannelFrameFactory.ModbusFrame;
+import com.ht.scada.communication.util.DataType;
 import com.ht.scada.communication.util.DataValueUtil;
+import com.ht.scada.communication.util.PortInfoFactory;
+import com.ht.scada.communication.util.PortInfoFactory.DtuInfo;
+import com.ht.scada.communication.util.PortInfoFactory.TcpIpInfo;
+import io.netty.channel.EventLoop;
+import io.netty.channel.EventLoopGroup;
 
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class ModbusTcpChannel extends CommunicationChannel {
 	private boolean running = false;
-    private ScheduledExecutorService executorService;
+    private EventLoop executorService;
 
 	private ModbusMaster master;
 	private List<ModbusFrame> frameList;
 	
-	public ModbusTcpChannel(AcquisitionChannel channel, List<EndTagWrapper> endTagList) throws Exception {
-		super(channel, endTagList);
+	public ModbusTcpChannel(EventLoopGroup eventLoopGroup, ChannelInfo channel, List<EndTagWrapper> endTagList) throws Exception {
+		super(eventLoopGroup, channel, endTagList);
 	}
 
 	@Override
@@ -44,7 +46,7 @@ public class ModbusTcpChannel extends CommunicationChannel {
 			DtuInfo dtuInfo = PortInfoFactory.parseDtuInfo(portInfo);
 			master = new DTUMaster(dtuInfo.dtuId, dtuInfo.heartBeat, 5000, 1000);
 		} else {
-			throw new PortInfoErrorException("ModbusTcp通讯规约不支持该通讯模式:" + portInfo);
+			throw new IllegalArgumentException("ModbusTcp通讯规约不支持该通讯模式:" + portInfo);
 		}
 		
 		frameList = ChannelFrameFactory.parseModbusFrames(channel.getFrames());
@@ -54,7 +56,7 @@ public class ModbusTcpChannel extends CommunicationChannel {
 	public void start() {
 		if(master != null) {
 			running = true;
-            executorService = Executors.newSingleThreadScheduledExecutor();
+            executorService = eventLoopGroup.next();
 
             // 解析通讯帧并生成数据存储区域
             for (final ModbusFrame frame : frameList) {
@@ -129,9 +131,9 @@ public class ModbusTcpChannel extends CommunicationChannel {
 			forEachYxTagVar(slaveID, new DataHandler<YxTagVar>() {
                 @Override
                 public boolean each(EndTagWrapper model, YxTagVar var) {
-                    TagCfgTpl tpl = var.tpl;
+                    TagVarTpl tpl = var.tpl;
                     if (tpl.getDataType() == DataType.BOOL && tpl.getBitOffset() >= 0) {
-                        int index = tpl.getDataID() - start;
+                        int index = tpl.getDataId() - start;
                         if (tpl.getFunCode() != funCode || index < 0 || index + tpl.getByteLen() / 2 >= len) {
                             return true;
                         }
@@ -145,10 +147,10 @@ public class ModbusTcpChannel extends CommunicationChannel {
                 @Override
                 public boolean each(EndTagWrapper model, YcTagVar var) {
 
-                    TagCfgTpl tpl = var.tpl;
+                    TagVarTpl tpl = var.tpl;
 
                     float value = Float.NaN;
-                    int index = tpl.getDataID() - start;
+                    int index = tpl.getDataId() - start;
                     if (tpl.getFunCode() != funCode || index < 0 || index + tpl.getByteLen() / 2 >= len) {
                         return true;
                     }
@@ -156,11 +158,11 @@ public class ModbusTcpChannel extends CommunicationChannel {
                     switch (tpl.getDataType()) {
                         case INT16:
                             int int16 = DataValueUtil.parseInt16(respData, index * 2 + tpl.getByteOffset());
-                            var.update(int16 * tpl.getCoefValue() + tpl.getBaseValue(), datetime, realtimeDataMap);
+                            var.update(int16, datetime, realtimeDataMap);
                             break;
                         case FLOAT:
                             float floatValue = DataValueUtil.parseFloatValue(respData, index * 2 + tpl.getByteOffset());
-                            var.update(floatValue * tpl.getCoefValue() + tpl.getBaseValue(), datetime, realtimeDataMap);
+                            var.update(floatValue, datetime, realtimeDataMap);
                             break;
                         default:
                             break;
@@ -172,10 +174,10 @@ public class ModbusTcpChannel extends CommunicationChannel {
                 @Override
                 public boolean each(EndTagWrapper model, YmTagVar var) {
 
-                    TagCfgTpl tpl = var.tpl;
+                    TagVarTpl tpl = var.tpl;
 
                     double value = Double.NaN;
-                    int index = tpl.getDataID() - start;
+                    int index = tpl.getDataId() - start;
                     if (tpl.getFunCode() != funCode || index < 0 || index + tpl.getByteLen() / 2 >= len) {
                         return true;
                     }
@@ -183,14 +185,14 @@ public class ModbusTcpChannel extends CommunicationChannel {
                     switch (tpl.getDataType()) {
                         case INT32:
                             int int32 = DataValueUtil.parseInt32(respData, index * 2 + tpl.getByteOffset());
-                            var.update(int32 * tpl.getCoefValue() + tpl.getBaseValue(), datetime, realtimeDataMap);
+                            var.update(int32, datetime, realtimeDataMap);
                             break;
                         case DOUBLE:
                             double doubleValue = DataValueUtil.parseDoubleValue(respData, index * 2 + tpl.getByteOffset());
-                            var.update(doubleValue * tpl.getCoefValue() + tpl.getBaseValue(), datetime, realtimeDataMap);
+                            var.update(doubleValue, datetime, realtimeDataMap);
                         case MOD10000:
                             int mod10000 = DataValueUtil.parseMod10000(respData, index * 2 + tpl.getByteOffset());
-                            var.update(mod10000 * tpl.getCoefValue() + tpl.getBaseValue(), datetime, realtimeDataMap);
+                            var.update(mod10000, datetime, realtimeDataMap);
                             break;
                         default:
                             break;
@@ -207,13 +209,13 @@ public class ModbusTcpChannel extends CommunicationChannel {
 			forEachYxTagVar(slaveID, new DataHandler<YxTagVar>() {
                 @Override
                 public boolean each(EndTagWrapper model, YxTagVar var) {
-                    TagCfgTpl tpl = var.tpl;
+                    TagVarTpl tpl = var.tpl;
                     if (tpl.getDataType() == DataType.BOOL) {
 
                         if (tpl.getFunCode() != funCode) {
                             return true;
                         }
-                        int index = tpl.getDataID() - start;
+                        int index = tpl.getDataId() - start;
                         if (index >= 0 && index < respData.length) {
                             var.update(respData[index], datetime, realtimeDataMap);
                         }
@@ -227,9 +229,6 @@ public class ModbusTcpChannel extends CommunicationChannel {
 	@Override
 	public void stop() {
 		running = false;
-		if (executorService != null) {
-            executorService.shutdownNow();
-		}
 		if (master != null) {
 			master.close();
 		}

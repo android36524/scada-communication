@@ -23,24 +23,24 @@
 			<div class="control-group">
 				<label for="loginName" class="control-label">用户名:</label>
 				<div class="controls">
-					<input type="text" id="username" name="username" class="input-large required"/>
+					<input varType="text" id="username" name="username" class="input-large required"/>
 				</div>
 			</div>
 			<div class="control-group">
 				<label for="name" class="control-label">姓名:</label>
 				<div class="controls">
-					<input type="text" id="name" name="name" class="input-large required"/>
+					<input varType="text" id="name" name="name" class="input-large required"/>
 				</div>
 			</div>
             <div class="control-group">
 				<label for="rolename" class="control-label">角色:</label>
 				<div class="controls">
-                    <input type="text" id="rolename" name="rolename" class="input-large required" value="admin"/>
+                    <input varType="text" id="rolename" name="rolename" class="input-large required" value="admin"/>
 				</div>
 			</div>
 			<div class="form-actions">
-				<input id="submit_btn" class="btn btn-primary" type="submit" value="提交"/>&nbsp;	
-				<input id="cancel_btn" class="btn" type="button" value="返回" onclick="history.back()"/>
+				<input id="submit_btn" class="btn btn-primary" varType="submit" value="提交"/>&nbsp;
+				<input id="cancel_btn" class="btn" varType="button" value="返回" onclick="history.back()"/>
 			</div>
 		</fieldset>
 	</form>

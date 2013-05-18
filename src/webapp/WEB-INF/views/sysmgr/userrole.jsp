@@ -9,8 +9,8 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>角色管理</title>
-<link rel="stylesheet" type="text/css" href="${ctx}/static/dhtmlx/dhtmlx.css">
-<script src="${ctx}/static/jquery/jquery-1.7.1.min.js"></script>
+<link rel="stylesheet" varType="text/css" href="${ctx}/static/dhtmlx/dhtmlx.css">
+<script src="${ctx}/static/jquery/jquery-1.7.1.minValue.js"></script>
 <script src="${ctx}/static/jquery/jquery.form.js"></script> 
 <script src="${ctx}/static/dhtmlx/dhtmlx.js"></script>
 <style>
@@ -39,7 +39,7 @@ function doOnLoad(){
 	  creatToolbar();
 	  
 	  $.ajax({
-		  type: 'POST',
+		  varType: 'POST',
 		  url: '${ctx}/admin/role/list',
 		  success: function(json){
 			var item=jsonManage(json);
@@ -139,7 +139,7 @@ function creatGrid(json){
 }
 function getGridRowsData(){
     	  $.ajax({
-		  type: 'POST',
+		  varType: 'POST',
 		  url: '${ctx}/admin/role/list',
 		  success: function(json){
 			var item=jsonManage(json);
@@ -152,7 +152,7 @@ function getGridRowsData(){
 function alertMessage(value){
         dhtmlx.message({
 		title: "消息提示",
-                type: "alert",
+                varType: "alert",
 		text: value
         });
 }
@@ -190,7 +190,7 @@ function dropMessage(){
         return;
     }
     dhtmlx.message({ 
-        type:"confirm", 
+        varType:"confirm",
         text:"确定要删除此用户?",
         title:"删除用户",
         ok:"是",
@@ -233,7 +233,7 @@ function updateRoleFormSubmit(){
 //删除角色
 function drop(selectedId){
    $.ajax({
-        type: 'POST',
+        varType: 'POST',
         url: '${ctx}/admin/role/delUserRole',
         data:"id="+selectedId,
         success: function(json){
@@ -254,14 +254,14 @@ function drop(selectedId){
     <form id="addForm" name="addForm" action="${ctx}/admin/role/saveRole" method="post" autocomplete=off >
             <div style=" margin: 5px;">
                 <label for="roleName">角色名称:</label>
-                <input type="text" name="name" id="roleName"></input>
+                <input varType="text" name="name" id="roleName"></input>
             </div>
             <div style=" margin: 5px;">
                 <label for="roleDescription">角色说明:</label>
-                <input  type="text" name="description" id="roleDescription"></input>
+                <input  varType="text" name="description" id="roleDescription"></input>
             </div>
             <div style=" margin: 10px; text-align: center">
-                <input id="submit_btn"  type="button" onclick="addRolseFormSubmit()" value="提交"/>
+                <input id="submit_btn"  varType="button" onclick="addRolseFormSubmit()" value="提交"/>
             </div>
     </form>
 </div>
@@ -269,15 +269,15 @@ function drop(selectedId){
     <form id="updateForm" name="updateForm" action="${ctx}/admin/role/saveRole" method="post" autocomplete=off >
             <div style=" margin: 5px;">
                 <label for="update_roleName">角色名称:</label>
-                <input type="hidden" name="id" id="update_roleID" value=""></input>
-                <input type="text" name="name" id="update_roleName"></input>
+                <input varType="hidden" name="id" id="update_roleID" value=""></input>
+                <input varType="text" name="name" id="update_roleName"></input>
             </div>
             <div style=" margin: 5px;">
                 <label for="update_roleDescription">角色说明:</label>
-                <input  type="text" name="description" id="update_roleDescription"></input>
+                <input  varType="text" name="description" id="update_roleDescription"></input>
             </div>
             <div style=" margin: 10px; text-align: center">
-                <input id="submit_btn"  type="button" onclick="updateRoleFormSubmit()" value="提交"/>
+                <input id="submit_btn"  varType="button" onclick="updateRoleFormSubmit()" value="提交"/>
             </div>
     </form>
 </div>

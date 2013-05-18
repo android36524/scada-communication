@@ -1,24 +1,24 @@
 package com.ht.scada.communication.model;
 
-import com.ht.scada.common.tag.entity.EndTag;
-import com.ht.scada.common.tag.entity.VarGroupCfg;
-import com.ht.scada.common.tag.entity.VarIOInfo;
-import com.ht.scada.common.tag.util.DataType;
-import com.ht.scada.common.tag.util.VarGroup;
+import com.ht.scada.communication.entity.VarGroupInfo;
+import com.ht.scada.communication.util.DataType;
+import com.ht.scada.communication.util.VarGroup;
+import com.ht.scada.communication.entity.EndTag;
+import com.ht.scada.communication.entity.VarIOInfo;
 import com.ht.scada.communication.service.DataService;
-import com.ht.scada.data.kv.FaultRecord;
-import com.ht.scada.data.kv.OffLimitsRecord;
-import com.ht.scada.data.kv.VarGroupData;
-import com.ht.scada.data.kv.YXData;
+import com.ht.scada.communication.data.kv.FaultRecord;
+import com.ht.scada.communication.data.kv.OffLimitsRecord;
+import com.ht.scada.communication.data.kv.VarGroupData;
+import com.ht.scada.communication.data.kv.YXData;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.LocalDateTime;
 
 import java.util.*;
 
 public class EndTagWrapper {
-	public final EndTag endTag;
+	private final EndTag endTag;
 	
-	public final Map<VarGroup, VarGroupWrapper> varGroupWrapperMap;
+	private final Map<VarGroup, VarGroupWrapper> varGroupWrapperMap;
 
 	/** RTU上送的历史数据暂存队列 **/
 	private final Map<String, VarGroupData> historyGroupDataMap = new HashMap<>();
@@ -30,86 +30,122 @@ public class EndTagWrapper {
 	private final List<OffLimitsRecord> offLimitsRecordList = new ArrayList<>();
 	
 	//public final List<TagVar> varList;
-    public final List<YxTagVar> yxVarList = new ArrayList<>();
+    private final List<YxTagVar> yxVarList = new ArrayList<>();
     /**
      * TODO: 包括数组变量, 此种做法可能会造成错误的操作, 暂时没有更好的办法
      */
-    public final List<YcTagVar> ycVarList = new ArrayList<>();
-    public final List<YmTagVar> ymVarList = new ArrayList<>();
-    public final List<TagVar> qtVarList = new ArrayList<>();
-    public final List<TagVar> ykVarList = new ArrayList<>();
-    public final List<TagVar> ytVarList = new ArrayList<>();
+    private final List<YcTagVar> ycVarList = new ArrayList<>();
+    private final List<YmTagVar> ymVarList = new ArrayList<>();
+    private final List<TagVar> qtVarList = new ArrayList<>();
+    private final List<TagVar> ykVarList = new ArrayList<>();
+    private final List<TagVar> ytVarList = new ArrayList<>();
 
-	public EndTagWrapper(EndTag endTag, List<VarGroupCfg> varGroupCfgs, List<VarTplInfo> tplVarList, List<VarIOInfo> ioInfoList) {
+	public EndTagWrapper(EndTag endTag, List<VarGroupInfo> varGroupInfos, List<TagVarTplWrapper> tplVarList, List<VarIOInfo> ioInfoList) {
 		this.endTag = endTag;
 		
-		varGroupWrapperMap = new HashMap<>(varGroupCfgs.size());
-		for (VarGroupCfg cfg : varGroupCfgs) {
+		varGroupWrapperMap = new HashMap<>(varGroupInfos.size());
+		for (VarGroupInfo cfg : varGroupInfos) {
 			VarGroupWrapper wrapper = new VarGroupWrapper(cfg);
 			varGroupWrapperMap.put(cfg.getVarGroup(), wrapper);
 		}
 		
 		//this.varList = new ArrayList<>(tplVarList.size());
-		for (VarTplInfo tpl : tplVarList) {
+		for (TagVarTplWrapper tplWrapper : tplVarList) {
 			//varList.add(tagVar);
-            switch (tpl.tagTpl.getVarType()) {
+            switch (tplWrapper.getTagVarTpl().getVarType()) {
                 case YX:
-                    yxVarList.add(new YxTagVar(this, tpl));
+                    yxVarList.add(new YxTagVar(this, tplWrapper));
                     break;
                 case YC:
                 {
-                    YcTagVar tagVar = createYcTagVar(ioInfoList, tpl);
+                    YcTagVar tagVar = createYcTagVar(ioInfoList, tplWrapper);
                     ycVarList.add(tagVar);
                 }
                     break;
                 case YM:
                 {
-                    YmTagVar tagVar = createYmTagVar(ioInfoList, tpl);
+                    YmTagVar tagVar = createYmTagVar(ioInfoList, tplWrapper);
                     ymVarList.add(tagVar);
                 }
                     break;
                 case YK:
-                    ykVarList.add(new TagVar(this, tpl.tagTpl));
+                    ykVarList.add(new TagVar(this, tplWrapper.getTagVarTpl()));
                     break;
                 case YT:
-                    ytVarList.add(new TagVar(this, tpl.tagTpl));
+                    ytVarList.add(new TagVar(this, tplWrapper.getTagVarTpl()));
                     break;
                 case QT:
-                    if (tpl.tagTpl.getDataType() == DataType.INT16_ARRAY) {//示功图数据数组
-                        YcTagVar tagVar = createYcTagVar(ioInfoList, tpl);
+                    if (tplWrapper.getTagVarTpl().getDataType() == DataType.INT16_ARRAY) {//示功图数据数组
+                        YcTagVar tagVar = createYcTagVar(ioInfoList, tplWrapper);
                         ycVarList.add(tagVar);
                     }
-                    qtVarList.add(new TagVar(this, tpl.tagTpl));
+                    qtVarList.add(new TagVar(this, tplWrapper.getTagVarTpl()));
                     break;
             }
 
 		}
 	}
 
-    private YmTagVar createYmTagVar(List<VarIOInfo> ioInfoList, VarTplInfo tpl) {
-        YmTagVar tagVar = new YmTagVar(this, tpl);
+    public Map<VarGroup, VarGroupWrapper> getVarGroupWrapperMap() {
+        return varGroupWrapperMap;
+    }
+
+    public EndTag getEndTag() {
+        return endTag;
+    }
+
+    public List<YxTagVar> getYxVarList() {
+        return yxVarList;
+    }
+
+    public List<YcTagVar> getYcVarList() {
+        return ycVarList;
+    }
+
+    public List<YmTagVar> getYmVarList() {
+        return ymVarList;
+    }
+
+    public List<TagVar> getQtVarList() {
+        return qtVarList;
+    }
+
+    public List<TagVar> getYkVarList() {
+        return ykVarList;
+    }
+
+    public List<TagVar> getYtVarList() {
+        return ytVarList;
+    }
+
+    private YmTagVar createYmTagVar(List<VarIOInfo> ioInfoList, TagVarTplWrapper tpl) {
+        YmTagVar tagVar = null;
         if (ioInfoList != null) {
             for (VarIOInfo ioInfo : ioInfoList) {
-                if (ioInfo.getVarName().equals(tpl.getTagTpl().getVarName())) {
-                    tagVar.baseValue = ioInfo.getBaseValue();
-                    tagVar.coefValue = ioInfo.getCoefValue();
+                if (ioInfo.getVarName().equals(tpl.getTagVarTpl().getVarName())) {
+                    tagVar = new YmTagVar(this, tpl.getTagVarTpl(), ioInfo.getBaseValue(), ioInfo.getCoefValue());
                     break;
                 }
             }
         }
+        if (tagVar == null) {
+            tagVar = new YmTagVar(this, tpl.getTagVarTpl());
+        }
         return tagVar;
     }
 
-    private YcTagVar createYcTagVar(List<VarIOInfo> ioInfoList, VarTplInfo tpl) {
-        YcTagVar tagVar = new YcTagVar(this, tpl);
+    private YcTagVar createYcTagVar(List<VarIOInfo> ioInfoList, TagVarTplWrapper tpl) {
+        YcTagVar tagVar = null;
         if (ioInfoList != null) {
             for (VarIOInfo ioInfo : ioInfoList) {
-                if (ioInfo.getVarName().equals(tpl.getTagTpl().getVarName())) {
-                    tagVar.baseValue = ioInfo.getBaseValue();
-                    tagVar.coefValue = ioInfo.getCoefValue();
+                if (ioInfo.getVarName().equals(tpl.getTagVarTpl().getVarName())) {
+                    tagVar = new YcTagVar(this, tpl, ioInfo.getBaseValue(), ioInfo.getCoefValue());
                     break;
                 }
             }
+        }
+        if (tagVar == null) {
+            tagVar = new YcTagVar(this, tpl);
         }
         return tagVar;
     }
@@ -153,35 +189,34 @@ public class EndTagWrapper {
             return;
         }
 
-        int interval = wrapper.cfg.getInterval();
+        int interval = wrapper.getVarGroupInfo().getIntvl();
         int minute = LocalDateTime.fromDateFields(datetime).getMinuteOfHour() / interval * interval;
-        if (interval <= 0 || (wrapper.lastMinute != minute)) {
-            wrapper.lastMinute = minute;
+        if (interval <= 0 || (wrapper.getLastMinute() != minute)) {
+            wrapper.setLastMinute(minute);
             VarGroupData data = new VarGroupData();
 
             for (YxTagVar var : this.yxVarList) {// 遍历该节点下的所有变量，并进行处理
-                if (var.tpl.getVarGroup() == varGroup && var.lastYxValue != -1) {
+                if (var.tpl.getVarGroup() == varGroup && var.getLastYxValue() != -1) {
                     //realtimeDataMap.put(key, Boolean.toString(var.lastYxValue == 1));
-                    data.getYxValueMap().put(var.tpl.getVarName(), var.lastYxValue > 0);
+                    data.getYxValueMap().put(var.tpl.getVarName(), var.getLastYxValue() > 0);
                 }
             }
 
             for (YcTagVar var : this.ycVarList) {// 遍历该节点下的所有变量，并进行处理
                 if (var.tpl.getVarGroup() == varGroup) {
-                    if (!Float.isNaN(var.lastYcValue)) {
-                        data.getYcValueMap().put( var.tpl.getVarName(), var.lastYcValue);
-                    } else if (var.lastArrayValue != null) {
+                    if (!Float.isNaN(var.getLastYcValue())) {
+                        data.getYcValueMap().put( var.tpl.getVarName(), var.getLastYcValue());
+                    } else if (var.getLastArrayValue() != null) {
                         // TODO: 示功图数据打包完成后加入实时数据更新列表
-                        String key = this.endTag.getCode() + "/" + var.tpl.getVarName();
-                        realtimeDataMap.put(key, StringUtils.join(Arrays.asList(var.lastArrayValue), ","));
-                        data.getArrayValueMap().put( var.tpl.getVarName(), var.lastArrayValue);
+                        realtimeDataMap.put(var.getRTKey(), StringUtils.join(Arrays.asList(var.getLastArrayValue()), ","));
+                        data.getArrayValueMap().put( var.tpl.getVarName(), var.getLastArrayValue());
                     }
                 }
             }
 
             for (YmTagVar var : this.ymVarList) {// 遍历该节点下的所有变量，并进行处理
-                if (var.tpl.getVarGroup() == varGroup && !Double.isNaN(var.lastYmValue)) {
-                    data.getYmValueMap().put( var.tpl.getVarName(), var.lastYmValue);
+                if (var.tpl.getVarGroup() == varGroup && !Double.isNaN(var.getLastYmValue())) {
+                    data.getYmValueMap().put( var.tpl.getVarName(), var.getLastYmValue());
                 }
             }
 
@@ -235,7 +270,7 @@ public class EndTagWrapper {
         }
         float[] v = data.getArrayValueMap().get(var.tpl.getVarName());
         if (v == null) {
-            v = new float[var.lastArrayValue.length];
+            v = new float[var.getLastArrayValue().length];
             data.getArrayValueMap().put(var.tpl.getVarName(), v);
         }
         return v;

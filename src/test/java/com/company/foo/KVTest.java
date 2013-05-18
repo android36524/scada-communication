@@ -1,7 +1,7 @@
 package com.company.foo;
 
-import com.ht.scada.common.tag.util.VarGroup;
-import com.ht.scada.data.kv.VarGroupData;
+import com.ht.scada.communication.data.kv.VarGroupData;
+import com.ht.scada.communication.util.VarGroup;
 import org.xerial.snappy.Snappy;
 
 import java.io.*;

@@ -30,7 +30,7 @@ a:hover {
 	COLOR: #ff0000; TEXT-DECORATION: underline
 }
 </style>
-<script type="text/javascript">
+<script varType="text/javascript">
 	function onSubmit(){
                 var oldPass=document.getElementById("oldpass").value;
 		var newPass=document.getElementById("newPass").value;
@@ -80,18 +80,18 @@ a:hover {
                 </div>
                 <div style=" margin: 5px;">
                     <label for="oldpass">原始密码:</label>
-                    <input type="password" name="oldpass" ></input>
+                    <input varType="password" name="oldpass" ></input>
                 </div>
                 <div style=" margin: 5px;">
                     <label for="newPass">新设密码:</label>
-                    <input type="password" name="newPass" id="newPass"></input>
+                    <input varType="password" name="newPass" id="newPass"></input>
                 </div>
                 <div style=" margin: 5px;">
                     <label for="rePass">确认密码:</label>
-                    <input  type="password" name="rePass" id="rePass"></input>
+                    <input  varType="password" name="rePass" id="rePass"></input>
                 </div>
                 <div style=" margin: 10px; text-align: center">
-                    <input id="submit_btn"  type="submit" value="提交"/>
+                    <input id="submit_btn"  varType="submit" value="提交"/>
                 </div>
             </form>
              </div>

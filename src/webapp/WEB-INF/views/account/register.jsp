@@ -34,30 +34,30 @@
 			<div class="control-group">
 				<label for="loginName" class="control-label">用户名:</label>
 				<div class="controls">
-					<input type="text" id="username" name="username" class="input-large required" minlength="3"/>
+					<input varType="text" id="username" name="username" class="input-large required" minlength="3"/>
 				</div>
 			</div>
 			<div class="control-group">
 				<label for="name" class="control-label">姓名:</label>
 				<div class="controls">
-					<input type="text" id="name" name="name" class="input-large required"/>
+					<input varType="text" id="name" name="name" class="input-large required"/>
 				</div>
 			</div>
 			<div class="control-group">
 				<label for="plainPassword" class="control-label">密码:</label>
 				<div class="controls">
-					<input type="password" id="password" name="password" class="input-large required"/>
+					<input varType="password" id="password" name="password" class="input-large required"/>
 				</div>
 			</div>
 			<div class="control-group">
 				<label for="confirmPassword" class="control-label">确认密码:</label>
 				<div class="controls">
-					<input type="password" id="confirmPassword" name="confirmPassword" class="input-large required" equalTo="#plainPassword"/>
+					<input varType="password" id="confirmPassword" name="confirmPassword" class="input-large required" equalTo="#plainPassword"/>
 				</div>
 			</div>
 			<div class="form-actions">
-				<input id="submit_btn" class="btn btn-primary" type="submit" value="提交"/>&nbsp;	
-				<input id="cancel_btn" class="btn" type="button" value="返回" onclick="history.back()"/>
+				<input id="submit_btn" class="btn btn-primary" varType="submit" value="提交"/>&nbsp;
+				<input id="cancel_btn" class="btn" varType="button" value="返回" onclick="history.back()"/>
 			</div>
 		</fieldset>
 	</form>

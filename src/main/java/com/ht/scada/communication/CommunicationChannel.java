@@ -1,10 +1,14 @@
 package com.ht.scada.communication;
 
-import com.ht.scada.common.tag.entity.AcquisitionChannel;
-import com.ht.scada.common.tag.util.VarGroup;
+import com.ht.scada.communication.service.RealtimeDataService;
+import com.ht.scada.communication.entity.ChannelInfo;
 import com.ht.scada.communication.model.*;
 import com.ht.scada.communication.service.DataService;
-import com.ht.scada.data.service.RealtimeDataService;
+import com.ht.scada.communication.util.VarGroup;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -17,10 +21,12 @@ import java.util.Map;
  */
 public abstract class CommunicationChannel implements ICommChannel {
 
+    public static final Logger log = LoggerFactory.getLogger(CommunicationChannel.class);
+
 	private DataService dataService;
 	private RealtimeDataService realtimeDataService;
 
-	protected final AcquisitionChannel channel;
+	protected final ChannelInfo channel;
 
 //	private List<EndTagWrapper> endTagList = Collections
 //			.synchronizedList(new LinkedList<EndTagWrapper>());
@@ -29,13 +35,27 @@ public abstract class CommunicationChannel implements ICommChannel {
 	/** 实时数据暂存队列 **/
 	protected Map<String, String> realtimeDataMap = new HashMap<>(256);
 
-    protected CommunicationChannel(AcquisitionChannel channel, List<EndTagWrapper> endTagList) throws Exception {
+    protected EventLoopGroup eventLoopGroup;
+
+    protected CommunicationChannel(EventLoopGroup eventLoopGroup, ChannelInfo channel, List<EndTagWrapper> endTagList) throws Exception {
+        this.dataService = CommunicationManager.getInstance().getDataService();
+        this.realtimeDataService = CommunicationManager.getInstance().getRealtimeDataService();
+
         this.channel = channel;
         this.endTagList = endTagList;
-        init();
+        this.eventLoopGroup = eventLoopGroup;
+        if (this.eventLoopGroup == null) {
+            this.eventLoopGroup = new NioEventLoopGroup(1);
+        }
+        if (endTagList == null || endTagList.isEmpty()) {
+            log.warn("采集通道[{}]未关联监控对象, 请检查配置", channel.getName());
+        } else {
+            log.info("采集通道[{}]监控对象数量：{}", channel.getName(), endTagList.size());
+            init();
+        }
     }
 
-	public AcquisitionChannel getChannel() {
+	public ChannelInfo getChannel() {
 		return channel;
 	}
 
@@ -85,11 +105,11 @@ public abstract class CommunicationChannel implements ICommChannel {
             if (!isRunning()) {
                 return;
             }
-            if (model.endTag.getDeviceAddr() != deviceAddr) {
+            if (model.getEndTag().getDeviceAddr() != deviceAddr) {
                 continue;
             }
 
-            for (YxTagVar var : model.yxVarList) {
+            for (YxTagVar var : model.getYxVarList()) {
                 if (!isRunning()) {
                     return;
                 }
@@ -110,11 +130,11 @@ public abstract class CommunicationChannel implements ICommChannel {
             if (!isRunning()) {
                 return;
             }
-            if (model.endTag.getDeviceAddr() != deviceAddr) {
+            if (model.getEndTag().getDeviceAddr() != deviceAddr) {
                 continue;
             }
 
-            for (YcTagVar var : model.ycVarList) {
+            for (YcTagVar var : model.getYcVarList()) {
                 if (!isRunning()) {
                     return;
                 }
@@ -135,11 +155,11 @@ public abstract class CommunicationChannel implements ICommChannel {
             if (!isRunning()) {
                 return;
             }
-            if (model.endTag.getDeviceAddr() != deviceAddr) {
+            if (model.getEndTag().getDeviceAddr() != deviceAddr) {
                 continue;
             }
 
-            for (YmTagVar var : model.ymVarList) {
+            for (YmTagVar var : model.getYmVarList()) {
                 if (!isRunning()) {
                     return;
                 }
@@ -160,11 +180,11 @@ public abstract class CommunicationChannel implements ICommChannel {
             if (!isRunning()) {
                 return;
             }
-            if (model.endTag.getDeviceAddr() != deviceAddr) {
+            if (model.getEndTag().getDeviceAddr() != deviceAddr) {
                 continue;
             }
 
-            for (TagVar var : model.qtVarList) {
+            for (TagVar var : model.getQtVarList()) {
                 if (!isRunning()) {
                     return;
                 }
@@ -187,7 +207,7 @@ public abstract class CommunicationChannel implements ICommChannel {
 //	 */
 //	@Override
 //	public void endTagAttached(int deviceAddr, int endTagID, String endTagCode,
-//			String endTagType, String tplName, List<VarTplInfo> tplList,
+//			String endTagType, String tplName, List<TagVarTplWrapper> tplList,
 //			List<VarIOInfo> ioInfoList) {
 //		synchronized (lock) {
 //			final EndTagWrapper model = new EndTagWrapper(deviceAddr, endTagID,

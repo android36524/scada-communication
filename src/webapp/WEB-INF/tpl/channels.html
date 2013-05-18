@@ -2,8 +2,8 @@
 <html lang="zh" xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>采集通道</title>
-    <!--<script type="text/javascript" src="/resources/js/jquery.tools.min.js"></script>-->
-    <script type="text/javascript" src="/resources/js/jquip.events.min.js"></script>
+    <!--<script varType="text/javascript" src="/resources/js/jquery.tools.minValue.js"></script>-->
+    <script varType="text/javascript" src="/resources/js/jquip.events.minValue.js"></script>
     <link href="/resources/css/style.css" rel="stylesheet"/>
 </head>
 <body>
@@ -18,7 +18,7 @@
     </ul>
 </div>
 <div style="margin: 10px 0;">
-    <input id="search" type="text" width="100" /> <input id="searchBtn" type="button" value="搜索" />
+    <input id="search" varType="text" width="100" /> <input id="searchBtn" varType="button" value="搜索" />
     <table class="dataintable">
         <thead>
             <tr>
@@ -37,7 +37,7 @@
         </tr>
         </tbody>
     </table>
-    <script type="text/javascript">
+    <script varType="text/javascript">
         $(function(){
             $("#searchBtn").click(function() {
                 var text = $("#search").val();

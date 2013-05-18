@@ -1,6 +1,6 @@
 package com.ht.scada.communication.iec104;
 
-import com.ht.scada.common.tag.entity.AcquisitionChannel;
+import com.ht.scada.communication.entity.ChannelInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,15 +9,15 @@ public class IEC104ChannelTest {
 
 //  @Test
   public void execute() throws Exception {
-	  AcquisitionChannel channel = new AcquisitionChannel();
+	  ChannelInfo channel = new ChannelInfo();
 	  channel.setName("测试通道");
 	  channel.setFrames("0x64-2|总召唤");
-	  channel.setInterval(200);
+	  channel.setIntvl(200);
 	  channel.setPortInfo("tcp/ip|127.0.0.1:2404");
 	  List<IEC104Channel> channelList = new ArrayList<>();
 	  long start = System.currentTimeMillis();
 	  for (int i = 0; i < 100; i++) {
-		  IEC104Channel commChannel = new IEC104Channel(channel, null);
+		  IEC104Channel commChannel = new IEC104Channel(null, channel, null);
 		  channelList.add(commChannel);
 		  commChannel.start();
 //	  Thread.sleep(100);

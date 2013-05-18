@@ -20,7 +20,7 @@
 <html>
 <head>
     <title>Apache Shiro Spring-Hibernate Sample Application</title>
-    <link rel="stylesheet" type="text/css" href="<c:url value="/styles/sample.css"/>"/>
+    <link rel="stylesheet" varType="text/css" href="<c:url value="/styles/sample.css"/>"/>
 </head>
 <body>
 <h3>Unauthorized</h3>

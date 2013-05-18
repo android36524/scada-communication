@@ -1,37 +1,45 @@
 package com.ht.scada.communication;
 
-import com.ht.scada.common.middleware.service.UrlService;
-import com.ht.scada.common.tag.entity.AcquisitionChannel;
-import com.ht.scada.common.tag.service.AcquisitionService;
+import com.ht.scada.communication.dao.ChannelInfoDao;
+import com.ht.scada.communication.dao.impl.ChannelInfoDaoImpl;
+import com.ht.scada.communication.entity.ChannelInfo;
 import com.ht.scada.communication.iec104.IEC104Channel;
 import com.ht.scada.communication.modbus.ModbusTcpChannel;
 import com.ht.scada.communication.model.EndTagWrapper;
-import com.ht.scada.data.service.RealtimeDataService;
+import com.ht.scada.communication.service.DataService;
+import com.ht.scada.communication.service.RealtimeDataService;
+import com.ht.scada.communication.service.impl.DataServiceKVImpl;
+import com.ht.scada.communication.service.impl.RealtimeDataServiceImpl;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Singleton
-@Named
 public class CommunicationManager implements IService {
 	
 	private static final Logger log = LoggerFactory.getLogger(CommunicationManager.class);
-	
-	@Inject
-	private AcquisitionService acquisitionService;
-    @Inject
-    private TagCfgManager tagCfgManager;
-    @Inject
+
+    private static CommunicationManager instance = new CommunicationManager();
+    public static CommunicationManager getInstance() {
+        return instance;
+    }
+
+    private DataService dataService;
     private RealtimeDataService realtimeDataService;
+
+    private ChannelInfoDao channelInfoDao;
+
+    private EventLoopGroup eventLoopGroup;
 
 	// 默认处理1000个采集通道
 	//private final List<CommunicationChannel> commChannels = new ArrayList<>(1000);
+    /**
+     * 通道序号与采集通道之间的映射
+     */
     private final Map<Integer, CommunicationChannel> channelMap = new HashMap<>(1000);
 
     /**
@@ -46,13 +54,28 @@ public class CommunicationManager implements IService {
 
     private final Object lock = new Object();
 
-	/**
+    private CommunicationManager() {
+        channelInfoDao = new ChannelInfoDaoImpl();
+        realtimeDataService = new RealtimeDataServiceImpl();
+        dataService = new DataServiceKVImpl();
+    }
+
+    public DataService getDataService() {
+        return dataService;
+    }
+
+    public RealtimeDataService getRealtimeDataService() {
+        return realtimeDataService;
+    }
+
+    /**
 	 * 初始化通讯控制器
+     * TODO:设置为自动启动
 	 * @throws Exception 
 	 */
 	//@PostConstruct
 	public void init() throws Exception {
-        tagCfgManager.init();
+        TagCfgManager.getInstance().init();
 		initChannels();
 	}
 	
@@ -60,7 +83,8 @@ public class CommunicationManager implements IService {
 	public void destroy() {
         stopAllChannel();
 		channelMap.clear();
-        tagCfgManager.destroy();
+        TagCfgManager.getInstance().destroy();
+        eventLoopGroup.shutdown();
 	}
 
     public void startAllChannel() {
@@ -68,9 +92,9 @@ public class CommunicationManager implements IService {
             if (!channelsRunning) {
                 log.info("启动通道采集服务");
                 // 更新Web服务地址
-                realtimeDataService.putValue(UrlService.COMM_URL_KEY, Config.INSTANCE.getUrl() + "/comm");
-                realtimeDataService.putValue(UrlService.COMM_YK_URL_KEY, Config.INSTANCE.getUrl() + "/comm/yk");
-                realtimeDataService.putValue(UrlService.COMM_YT_URL_KEY, Config.INSTANCE.getUrl() + "/comm/yt");
+                realtimeDataService.putValue("url.comm", Config.INSTANCE.getUrl() + "/comm");
+                realtimeDataService.putValue("url.comm.yk", Config.INSTANCE.getUrl() + "/comm/yk");
+                realtimeDataService.putValue("url.comm.yt", Config.INSTANCE.getUrl() + "/comm/yt");
                 for (CommunicationChannel channel : channelMap.values()) {
                     channel.start();
                 }
@@ -93,9 +117,17 @@ public class CommunicationManager implements IService {
 
     @Override
     public void start() {
+        if (running) {
+            return;
+        }
         log.info("启动服务");
         try {
             //TODO: 用于测试，未初始化通道配置init();
+            if (eventLoopGroup != null && !eventLoopGroup.isShutdown()) {
+                eventLoopGroup.shutdown();
+            }
+            eventLoopGroup = new NioEventLoopGroup();
+            init();
             running = true;
         } catch (Exception e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
@@ -105,6 +137,9 @@ public class CommunicationManager implements IService {
 
     @Override
     public void stop() {
+        if (!running) {
+            return;
+        }
         log.info("停止服务");
         running = false;
         destroy();
@@ -115,29 +150,37 @@ public class CommunicationManager implements IService {
 	 * @throws Exception 
 	 */
 	private void initChannels() throws Exception {
-		List<AcquisitionChannel> channels = acquisitionService.getAllChannel();
-		for (AcquisitionChannel channel : channels) {
+		List<ChannelInfo> channels = channelInfoDao.getAll();
+		for (ChannelInfo channel : channels) {
 			log.info("初始化采集通道:{}", channel.getName());
 			initChannel(channel);
+
+            // TODO: 测试用通道,正式发布时删除
+            for (int i=2; i < 1000; i++) {
+                channel.setIdx(i);
+                initChannel(channel);
+            }
 		}
 	}
 	
-	private void initChannel(AcquisitionChannel channel) throws Exception {
+	private void initChannel(ChannelInfo channel) throws Exception {
 		CommunicationChannel commChannel = null;
-		List<EndTagWrapper> endTagList = tagCfgManager.getEndTagWrapperByChannelIdx(channel.getIdx());
+		//List<EndTagWrapper> endTagList = tagCfgManager.getEndTagWrapperByChannelIdx(channel.getIdx());
+        List<EndTagWrapper> endTagList = TagCfgManager.getInstance().getEndTagWrapperByChannelIdx(1);
 		switch (channel.getProtocal()) {
 		case ModbusTCP:
-			commChannel = new ModbusTcpChannel(channel, endTagList);
+			commChannel = new ModbusTcpChannel(eventLoopGroup, channel, endTagList);
 			break;
 		case IEC104:
-			commChannel = new IEC104Channel(channel, endTagList);
+			commChannel = new IEC104Channel(eventLoopGroup, channel, endTagList);
 			break;
 		default:
+            log.error("不支持的通讯规约：{}", channel.getProtocal());
 			break;
 		}
 		
 		if (commChannel != null) {
-            channelMap.put(channel.getId(), commChannel);
+            channelMap.put(channel.getIdx(), commChannel);
 		}
 	}
 

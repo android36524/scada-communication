@@ -4,10 +4,6 @@ import com.ht.scada.communication.CommunicationManager;
 import com.ht.scada.communication.Config;
 import com.ht.scada.communication.IService;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
-
 /**
  * Created with IntelliJ IDEA.
  * User: bcw
@@ -15,15 +11,21 @@ import javax.inject.Singleton;
  * Time: 下午2:56
  * To change this template use File | Settings | File Templates.
  */
-@Singleton
-@Named
 public class CluserController implements IService {
+    private static CluserController instance = new CluserController();
+    public static CluserController getInstance() {
+        return instance;
+    }
+
     private volatile boolean running = false;
     private MasterServer masterServer;
     private SlaverClient slaverClient;
 
-    @Inject
     private CommunicationManager communicationController;
+
+    private CluserController() {
+        communicationController = CommunicationManager.getInstance();
+    }
 
     @Override
     public void start() {

@@ -18,13 +18,13 @@
 
 <body>
 	<form id="inputForm" action="${ctx}/task/${action}" method="post" class="form-horizontal">
-		<input type="hidden" name="id" value="${task.id}"/>
+		<input varType="hidden" name="id" value="${task.id}"/>
 		<fieldset>
 			<legend><small>管理任务</small></legend>
 			<div class="control-group">
 				<label for="task_title" class="control-label">任务名称:</label>
 				<div class="controls">
-					<input type="text" id="task_title" name="title"  value="${task.title}" class="input-large required" minlength="3"/>
+					<input varType="text" id="task_title" name="title"  value="${task.title}" class="input-large required" minlength="3"/>
 				</div>
 			</div>	
 			<div class="control-group">
@@ -34,8 +34,8 @@
 				</div>
 			</div>	
 			<div class="form-actions">
-				<input id="submit_btn" class="btn btn-primary" type="submit" value="提交"/>&nbsp;	
-				<input id="cancel_btn" class="btn" type="button" value="返回" onclick="history.back()"/>
+				<input id="submit_btn" class="btn btn-primary" varType="submit" value="提交"/>&nbsp;
+				<input id="cancel_btn" class="btn" varType="button" value="返回" onclick="history.back()"/>
 			</div>
 		</fieldset>
 	</form>

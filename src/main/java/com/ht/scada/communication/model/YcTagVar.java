@@ -1,8 +1,8 @@
 package com.ht.scada.communication.model;
 
-import com.ht.scada.common.tag.util.DataType;
-import com.ht.scada.common.tag.util.StorageFactory.OffLimitsStorage;
-import com.ht.scada.data.kv.OffLimitsRecord;
+import com.ht.scada.communication.data.kv.OffLimitsRecord;
+import com.ht.scada.communication.util.DataType;
+import com.ht.scada.communication.util.StorageFactory.OffLimitsStorage;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -11,7 +11,7 @@ import java.util.Map;
 
 public class YcTagVar extends TagVar {
 
-	public final List<OffLimitsStorage> offLimitsStorages;
+	private final List<OffLimitsStorage> offLimitsStorages;
 
     /**
      * 未解除的遥测越限记录
@@ -22,50 +22,86 @@ public class YcTagVar extends TagVar {
      */
     public final List<OffLimitsRecord> unResumedRtuRecords = new ArrayList<>(4);
 
-	public float baseValue = 0;// 基值
-	public float coefValue = 1;// 系数
-	public float maxValue = Float.NaN;
-	public float minValue = Float.NaN;
+	private float baseValue = 0;// 基值
+	private float coefValue = 1;// 系数
+	private float maxValue = Float.NaN;
+	private float minValue = Float.NaN;
 
-	public float lastYcValue = Float.NaN;// 当前遥测遥脉值
-    public float[] lastArrayValue = null;// 数组数据
+	private float lastYcValue = Float.NaN;// 当前遥测遥脉值
+    private float[] lastArrayValue = null;// 数组数据
 
-	public YcTagVar(EndTagWrapper endTag, VarTplInfo tplInfo) {
-        super(endTag, tplInfo.getTagTpl());
-		
-		this.offLimitsStorages = tplInfo.getOffLimitsStorages();
-		
-		baseValue = tplInfo.getTagTpl().getBaseValue();
-		coefValue = tplInfo.getTagTpl().getCoefValue();
-		
-		if (tplInfo.getTagTpl().getMax() != null)
-			maxValue = tplInfo.getTagTpl().getMax().floatValue();
-		if (tplInfo.getTagTpl().getMin() != null)
-			minValue = tplInfo.getTagTpl().getMin().floatValue();
-		
-		if (tpl.getDataType() == DataType.INT16_ARRAY) {//示功图数据数组
-			lastArrayValue = new float[tpl.getByteLen() / 2];
-		}
+	public YcTagVar(EndTagWrapper endTag, TagVarTplWrapper tplInfo) {
+        this(endTag, tplInfo, tplInfo.getTagVarTpl().getBaseValue(), tplInfo.getTagVarTpl().getCoefValue());
 	}
+    public YcTagVar(EndTagWrapper endTag, TagVarTplWrapper tplInfo, float baseValue, float coefValue) {
+        super(endTag, tplInfo.getTagVarTpl());
+
+        this.offLimitsStorages = tplInfo.getOffLimitsStorages();
+
+        this.baseValue = baseValue;
+        this.coefValue = coefValue;
+
+        if (tplInfo.getTagVarTpl().getMaxValue() != null)
+            maxValue = tplInfo.getTagVarTpl().getMaxValue().floatValue();
+        if (tplInfo.getTagVarTpl().getMinValue() != null)
+            minValue = tplInfo.getTagVarTpl().getMinValue().floatValue();
+
+        if (tpl.getDataType() == DataType.INT16_ARRAY) {//示功图数据数组
+            lastArrayValue = new float[tpl.getByteLen() / 2];
+        }
+    }
+
+    public float getLastYcValue() {
+        return lastYcValue;
+    }
+
+    public float[] getLastArrayValue() {
+        return lastArrayValue;
+    }
 
     /**
-     * 处理遥测变量值，包括加入实时数据库更新列表、处理遥测越限报警
+     * 计算并更新变量值, 计算公式为：value * coefValue + baseValue<br/>
+     * 处理遥测变量值，包括加入实时数据库更新列表、处理遥测越限报警.<br/>
+     * NOTE: 示功图数据需要在打包完成后才能加入实时数据更新列表，所以不在此处实现.<br/>
+     *  SEE: EndTagWrapper.generateVarGroupHisData()<br/>
      * @param value
      * @param datetime
      */
     public void update(float value, Date datetime, Map<String, String> realtimeDataMap) {
-        if (Float.isNaN(lastYcValue)) {
+        if (Float.isNaN(value)) {
             return;
         }
-        if (Double.isNaN(this.lastYcValue) || this.lastYcValue != value) {
+        value = calcValue(value);
+        if (Float.isNaN(this.lastYcValue) || this.lastYcValue != value) {
             this.lastYcValue = value;
             // 处理遥测越限记录
             handleOffLimits(datetime, value);
             // 实时数据更新
-            String key = endTagWrapper.endTag.getCode() + "/" + this.tpl.getVarName();
-            realtimeDataMap.put(key, Float.toString(value));
+            realtimeDataMap.put(getRTKey(), Float.toString(value));
         }
     }
+
+    /**
+     * 更新遥测数组值, 计算公式为：value * coefValue + baseValue
+     * @param value
+     * @param index
+     */
+    public void updateArrayValue(float value, int index) {
+        if (lastArrayValue == null || Float.isNaN(value)) {
+            return;
+        }
+        lastArrayValue[index] = calcValue(value);
+    }
+
+    /**
+     * 计算并更新变量值, 计算公式为：value * coefValue + baseValue
+     * @param value
+     * @return
+     */
+    public float calcValue(float value) {
+        return value * coefValue + baseValue;
+    }
+
 
     private void handleOffLimits(Date datetime, double value) {
         if (this.offLimitsStorages != null
@@ -103,7 +139,7 @@ public class YcTagVar extends TagVar {
                     }
                     if (!isRecorded) {
                         OffLimitsRecord record = new OffLimitsRecord(
-                                endTagWrapper.endTag.getCode(), tpl.getVarName(),
+                                endTagWrapper.getEndTag().getCode(), tpl.getVarName(),
                                 storage.info, value, storage.threshold,
                                 false, datetime);
                         endTagWrapper.addOffLimitsRecord(record);
@@ -125,7 +161,7 @@ public class YcTagVar extends TagVar {
                     }
                     if (!isRecorded) {
                         OffLimitsRecord record = new OffLimitsRecord(
-                                endTagWrapper.endTag.getCode(), tpl.getVarName(),
+                                endTagWrapper.getEndTag().getCode(), tpl.getVarName(),
                                 storage.info, value, storage.threshold,
                                 true, datetime);
                         endTagWrapper.addOffLimitsRecord(record);
@@ -178,7 +214,7 @@ public class YcTagVar extends TagVar {
                     }
                     if (!isRecorded) {
                         OffLimitsRecord record = new OffLimitsRecord(
-                                endTagWrapper.endTag.getCode(), tpl.getVarName(),
+                                endTagWrapper.getEndTag().getCode(), tpl.getVarName(),
                                 storage.info, value, storage.threshold,
                                 false, datetime);
                         endTagWrapper.addOffLimitsRecord(record);
@@ -200,7 +236,7 @@ public class YcTagVar extends TagVar {
                     }
                     if (!isRecorded) {
                         OffLimitsRecord record = new OffLimitsRecord(
-                                endTagWrapper.endTag.getCode(), tpl.getVarName(),
+                                endTagWrapper.getEndTag().getCode(), tpl.getVarName(),
                                 storage.info, value, storage.threshold,
                                 true, datetime);
                         endTagWrapper.addOffLimitsRecord(record);

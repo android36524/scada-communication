@@ -9,7 +9,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>首页</title>
-<link rel="stylesheet" type="text/css" href="${ctx}/static/dhtmlx/dhtmlx.css">
+<link rel="stylesheet" varType="text/css" href="${ctx}/static/dhtmlx/dhtmlx.css">
     
 <script src="${ctx}/static/dhtmlx/dhtmlx.js"></script>
 <style>

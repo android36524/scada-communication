@@ -35,7 +35,7 @@
 	
 	<!-- Jpa Entity Manager 配置 : JDNI name for EntityManagerFactory is defined in src/main/resources/META-INF/persistence.xml -->
 <!--     <jee:jndi-lookup jndi-name="java:jboss/spring-quickstart/persistence" id="entityManagerFactory"
-                     expected-type="javax.persistence.EntityManagerFactory" />
+                     expected-varType="javax.persistence.EntityManagerFactory" />
 	<bean id="entityManager" class="org.springframework.orm.jpa.support.SharedEntityManagerBean">
    		<property name="entityManagerFactory" ref="entityManagerFactory"/>
 	</bean> -->
@@ -97,7 +97,7 @@
 		</bean>
 		
 		<!-- 数据源配置,使用应用服务器的数据库连接池 -->
-<!-- 	<jee:jndi-lookup jndi-name="java:jboss/datasources/ExampleDS" id="dataSource" expected-type="javax.sql.DataSource"/> -->
+<!-- 	<jee:jndi-lookup jndi-name="java:jboss/datasources/ExampleDS" id="dataSource" expected-varType="javax.sql.DataSource"/> -->
 	</beans>
 	
 	<!-- local development环境 -->
@@ -144,7 +144,7 @@
 		</jdbc:initialize-database>	
 	</beans>
 	
-	<!-- unit test环境 -->
+	<!-- unitValue test环境 -->
 	<beans profile="test">
 	 	<context:property-placeholder ignore-resource-not-found="true"
 			location="classpath*:/application.properties,
@@ -155,7 +155,7 @@
 		</bean>
 		
 		<!-- Simple连接池 -->
-<!-- 	<jdbc:embedded-database id="dataSource" type="H2" /> -->
+<!-- 	<jdbc:embedded-database id="dataSource" varType="H2" /> -->
 		<bean id="dataSource" class="org.springframework.jdbc.datasource.SimpleDriverDataSource">
 			<property name="driverClass" value="${jdbc.driver}" />
 			<property name="url" value="${jdbc.url}" />

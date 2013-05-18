@@ -1,6 +1,6 @@
 package com.ht.scada.communication.model;
 
-import com.ht.scada.common.tag.entity.TagCfgTpl;
+import com.ht.scada.communication.entity.TagVarTpl;
 
 /**
  * Created with IntelliJ IDEA.
@@ -10,10 +10,24 @@ import com.ht.scada.common.tag.entity.TagCfgTpl;
  */
 public class TagVar {
     protected final EndTagWrapper endTagWrapper;
-    public final TagCfgTpl tpl;
+    public final TagVarTpl tpl;
+    private String key;
 
-    public TagVar(EndTagWrapper endTagWrapper, TagCfgTpl tpl) {
+    public TagVar(EndTagWrapper endTagWrapper, TagVarTpl tpl) {
         this.endTagWrapper = endTagWrapper;
         this.tpl = tpl;
+        key = endTagWrapper.getEndTag().getCode() + "/" + this.tpl.getVarGroup().toString() + "/" + this.tpl.getVarName();
+    }
+
+    /**
+     * 获取实时数据库存储用key
+     * @return
+     */
+    public String getRTKey() {
+        return key;
+    }
+
+    public TagVarTpl getTpl() {
+        return tpl;
     }
 }

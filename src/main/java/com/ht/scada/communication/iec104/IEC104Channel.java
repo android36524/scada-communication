@@ -6,16 +6,14 @@ import com.ht.iec104.master.MasterHandler;
 import com.ht.iec104.master.YKHandler;
 import com.ht.iec104.master.YTHandler;
 import com.ht.iec104.util.TiConst;
-import com.ht.scada.common.tag.entity.AcquisitionChannel;
-import com.ht.scada.common.tag.util.ChannelFrameFactory;
-import com.ht.scada.common.tag.util.ChannelFrameFactory.IEC104Frame;
-import com.ht.scada.common.tag.util.PortInfoFactory;
-import com.ht.scada.common.tag.util.PortInfoFactory.TcpIpInfo;
-import com.ht.scada.common.tag.util.VarGroup;
-import com.ht.scada.common.tag.util.VarType;
 import com.ht.scada.communication.CommunicationChannel;
+import com.ht.scada.communication.entity.ChannelInfo;
 import com.ht.scada.communication.model.*;
-import com.ht.scada.communication.util.CommUtil;
+import com.ht.scada.communication.util.*;
+import com.ht.scada.communication.util.ChannelFrameFactory.IEC104Frame;
+import com.ht.scada.communication.util.PortInfoFactory.TcpIpInfo;
+import io.netty.channel.EventLoop;
+import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,8 +21,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -48,10 +44,11 @@ public class IEC104Channel extends CommunicationChannel {
     private IEC104Master master;
 
     private IEC104Channel.MyMasterHandler masterHandler;
-    private ScheduledExecutorService executorService;
+    //private ScheduledExecutorService executorService;
+    private EventLoop executorService;
 
-    public IEC104Channel(AcquisitionChannel channel, List<EndTagWrapper> endTagList) throws Exception {
-        super(channel, endTagList);
+    public IEC104Channel(EventLoopGroup eventLoopGroup, ChannelInfo channel, List<EndTagWrapper> endTagList) throws Exception {
+        super(eventLoopGroup, channel, endTagList);
     }
 
     @Override
@@ -65,10 +62,10 @@ public class IEC104Channel extends CommunicationChannel {
             log.info("{} - 召唤帧共：{}", channel.getName(), frameList.size());
 
             TcpIpInfo tcpIpInfo = PortInfoFactory.parseTcpIpInfo(portInfo);
-            master = new IEC104Master(tcpIpInfo.ip, tcpIpInfo.port, 1);
 
+            //group.next().execute(null);
             masterHandler = new MyMasterHandler();
-            master.setMasterHandler(masterHandler);
+            master = new IEC104Master(eventLoopGroup, tcpIpInfo.ip, tcpIpInfo.port, 1, masterHandler);
 
         } else {
             log.error("采集通道{}的物理端口信息配置错误：{}", portInfo);
@@ -85,7 +82,8 @@ public class IEC104Channel extends CommunicationChannel {
             running = true;
             master.open();
 
-            executorService = Executors.newSingleThreadScheduledExecutor();
+            //executorService = Executors.newSingleThreadScheduledExecutor();
+            executorService = eventLoopGroup.next();
 
             /** 定时执行数据召唤 **/
             for (final IEC104Frame frame: frameList) { // 历史数据召唤不在此处执行
@@ -123,9 +121,6 @@ public class IEC104Channel extends CommunicationChannel {
         log.info("{}:停止采集", channel.getName());
 
         running = false;
-        if (executorService != null) {
-            executorService.shutdownNow();
-        }
         if (master != null) {
             master.close();
         }
@@ -153,20 +148,20 @@ public class IEC104Channel extends CommunicationChannel {
                 public boolean each(EndTagWrapper model, YcTagVar var) {
 
                     VarGroup varGroup = var.tpl.getVarGroup();
-                    VarGroupWrapper varGroupWrapper = model.varGroupWrapperMap.get(varGroup);
+                    VarGroupWrapper varGroupWrapper = model.getVarGroupWrapperMap().get(varGroup);
                     if (varGroupWrapper == null) {// 未配置分组
                         return true;
                     }
 
-                    int interval = varGroupWrapper.cfg.getInterval();
+                    int interval = varGroupWrapper.getVarGroupInfo().getIntvl();
                     if (interval <= 0) {
                         interval = defaultInterval;
                     }
 
-                    if (var.lastArrayValue != null) {// 功图、谐波历史数据
+                    if (var.getLastArrayValue() != null) {// 功图、谐波历史数据
 
-                        int startID = var.tpl.getDataID();
-                        int len = var.lastArrayValue.length;
+                        int startID = var.tpl.getDataId();
+                        int len = var.getLastArrayValue().length;
                         if (startID > infoID[infoID.length - 1] || startID + len <= infoID[0]) {
                             return true;
                         }
@@ -177,19 +172,19 @@ public class IEC104Channel extends CommunicationChannel {
                         for (int i = 0; i < value.length; i++) {
                             int offset = infoID[i] - startID;
                             if (offset >= 0 && offset < len) {
-                                v[offset] = (var.coefValue) * value[i] + var.baseValue;
+                                v[offset] = var.calcValue(value[i]);
                             }
                         }
                     } else {// 单个的遥测变量
                         int index = -1;
                         if (sq) {// 连续的地址
-                            int i = var.tpl.getDataID() - infoID[0];
+                            int i = var.tpl.getDataId() - infoID[0];
                             if (i >= 0 && i < value.length) {
                                 index = i;
                             }
                         } else {// 非连续的地址
                             for (int i = 0; i < infoID.length; i++) {
-                                if (infoID[i] == var.tpl.getDataID()) {
+                                if (infoID[i] == var.tpl.getDataId()) {
                                     index = i;
                                     break;
                                 }
@@ -197,7 +192,7 @@ public class IEC104Channel extends CommunicationChannel {
                         }
 
                         if (index >= 0) {
-                            float v = (var.coefValue) * value[index] + var.baseValue;
+                            float v = var.calcValue(value[index]);
                             Calendar cal = datetime[index];
                             String key = CommUtil.createRTUHisDataKey(varGroup, cal, interval);
                             model.addRTUYcHisData(var, key, cal.getTime(), v);
@@ -228,33 +223,33 @@ public class IEC104Channel extends CommunicationChannel {
                 public boolean each(EndTagWrapper model, YmTagVar var) {
 
                     VarGroup varGroup = var.tpl.getVarGroup();
-                    VarGroupWrapper varGroupWrapper = model.varGroupWrapperMap.get(varGroup);
+                    VarGroupWrapper varGroupWrapper = model.getVarGroupWrapperMap().get(varGroup);
                     if (varGroupWrapper == null) {
                         return true;
                     }
 
                     int index = -1;
                     if (sq) {// 连续的地址
-                        int i = var.tpl.getDataID() - infoID[0];
+                        int i = var.tpl.getDataId() - infoID[0];
                         if (i >= 0 && i < value.length) {
                             index = i;
                         }
                     } else {// 非连续的地址
                         for (int i = 0; i < infoID.length; i++) {
-                            if (infoID[i] == var.tpl.getDataID()) {
+                            if (infoID[i] == var.tpl.getDataId()) {
                                 index = i;
                                 break;
                             }
                         }
                     }
 
-                    int interval = varGroupWrapper.cfg.getInterval();
+                    int interval = varGroupWrapper.getVarGroupInfo().getIntvl();
                     if (interval <= 0) {
                         interval = defaultInterval;
                     }
 
                     if (index >= 0) {
-                        double v = (var.coefValue) * value[index] + var.baseValue;
+                        double v = var.calcValue(value[index]);
                         Calendar cal = datetime[index];
                         String key = CommUtil.createRTUHisDataKey(varGroup, cal, interval);
                         model.addRTUYmHisData(var, key, cal.getTime(), v);
@@ -284,27 +279,27 @@ public class IEC104Channel extends CommunicationChannel {
                 public boolean each(EndTagWrapper model, YxTagVar var) {
 
                     VarGroup varGroup = var.tpl.getVarGroup();
-                    VarGroupWrapper varGroupWrapper = model.varGroupWrapperMap.get(varGroup);
+                    VarGroupWrapper varGroupWrapper = model.getVarGroupWrapperMap().get(varGroup);
                     if (varGroupWrapper == null) {
                         return true;
                     }
 
                     int index = -1;
                     if (sq) {// 连续的地址
-                        int i = var.tpl.getDataID() - infoID[0];
+                        int i = var.tpl.getDataId() - infoID[0];
                         if (i >= 0 && i < value.length) {
                             index = i;
                         }
                     } else {// 非连续的地址
                         for (int i = 0; i < infoID.length; i++) {
-                            if (infoID[i] == var.tpl.getDataID()) {
+                            if (infoID[i] == var.tpl.getDataId()) {
                                 index = i;
                                 break;
                             }
                         }
                     }
 
-                    int interval = varGroupWrapper.cfg.getInterval();
+                    int interval = varGroupWrapper.getVarGroupInfo().getIntvl();
                     if (interval <= 0) {
                         interval = defaultInterval;
                     }
@@ -336,15 +331,15 @@ public class IEC104Channel extends CommunicationChannel {
                 @Override
                 public boolean each(EndTagWrapper model, YmTagVar var) {
                     if (sq) {
-                        int i = var.tpl.getDataID() - infoID[0];
+                        int i = var.tpl.getDataId() - infoID[0];
                         if (i >= 0 && i < value.length) {
-                            var.update((double) (var.coefValue) * value[i] + var.baseValue, date, realtimeDataMap);
+                            var.update(value[i], date, realtimeDataMap);
                             return true;
                         }
                     } else {
                         for (int i = 0; i < infoID.length; i++) {
-                            if (infoID[i] == var.tpl.getDataID()) {
-                                var.update((double) (var.coefValue) * value[i] + var.baseValue, date, realtimeDataMap);
+                            if (infoID[i] == var.tpl.getDataId()) {
+                                var.update(value[i], date, realtimeDataMap);
                                 return true;
                             }
                         }
@@ -371,10 +366,10 @@ public class IEC104Channel extends CommunicationChannel {
                 @Override
                 public boolean each(EndTagWrapper model, YcTagVar var) {
                     if (sq) {
-                        if (var.lastArrayValue != null) {// 遥测数组
+                        if (var.getLastArrayValue() != null) {// 遥测数组
                             // 处理示功图、谐波等数组数据
-                            int startID = var.tpl.getDataID();
-                            int len = var.lastArrayValue.length;
+                            int startID = var.tpl.getDataId();
+                            int len = var.getLastArrayValue().length;
                             if (startID > infoID[infoID.length - 1]
                                     || startID + len <= infoID[0]) {
                                 return true;
@@ -382,21 +377,21 @@ public class IEC104Channel extends CommunicationChannel {
                             for (int i = 0; i < value.length; i++) {
                                 int offset = infoID[i] - startID;
                                 if (offset >= 0 && offset < len) {
-                                    var.lastArrayValue[offset] = (float) (var.coefValue) * value[i] + var.baseValue;
+                                    var.updateArrayValue(value[i], offset);
                                 }
                             }
                         } else {// 单个遥测
-                            int i = var.tpl.getDataID() - infoID[0];
+                            int i = var.tpl.getDataId() - infoID[0];
                             if (i >= 0 && i < value.length) {
-                                var.update((var.coefValue) * value[i] + var.baseValue, date, realtimeDataMap);
+                                var.update(value[i], date, realtimeDataMap);
                                 return true;
                             }
                         }
                     } else {
                         if (var.tpl.getVarType() == VarType.YC) {
                             for (int i = 0; i < infoID.length; i++) {
-                                if (infoID[i] == var.tpl.getDataID()) {
-                                    var.update((var.coefValue) * value[i] + var.baseValue, date, realtimeDataMap);
+                                if (infoID[i] == var.tpl.getDataId()) {
+                                    var.update(value[i], date, realtimeDataMap);
                                     return true;
                                 }
                             }
@@ -425,14 +420,14 @@ public class IEC104Channel extends CommunicationChannel {
                 @Override
                 public boolean each(EndTagWrapper model, YxTagVar var) {
                     if (sq) {// 连续的地址
-                        int index = var.tpl.getDataID() - infoID[0];
+                        int index = var.tpl.getDataId() - infoID[0];
                         if (index >= 0 && index < value.length) {
                             var.update(value[index], date, realtimeDataMap);
                             return true;
                         }
                     } else {// 非连续的地址
                         for (int i = 0; i < infoID.length; i++) {
-                            if (infoID[i] == var.tpl.getDataID()) {
+                            if (infoID[i] == var.tpl.getDataId()) {
                                 var.update(value[i], date, realtimeDataMap);
                                 return true;
                             }

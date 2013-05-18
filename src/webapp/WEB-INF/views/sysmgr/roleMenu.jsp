@@ -9,8 +9,8 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>权限管理</title>
-        <link rel="stylesheet" type="text/css" href="${ctx}/static/dhtmlx/dhtmlx.css">
-        <script src="${ctx}/static/jquery/jquery-1.7.1.min.js"></script>
+        <link rel="stylesheet" varType="text/css" href="${ctx}/static/dhtmlx/dhtmlx.css">
+        <script src="${ctx}/static/jquery/jquery-1.7.1.minValue.js"></script>
         <script src="${ctx}/static/jquery/jquery.form.js"></script> 
         <script src="${ctx}/static/dhtmlx/dhtmlx.js"></script>
         <style>
@@ -51,7 +51,7 @@ function doOnLoad(){
     creatLayout();
     creatToolbar();
     $.ajax({
-        type: 'POST',
+        varType: 'POST',
         url: '${ctx}/admin/role/list',
         success: function(json){
               var item=jsonManage(json);
@@ -146,7 +146,7 @@ function saveMenu(menuStr){
     $.post('${ctx}/admin/role/saveRoleMenu',{
         roleId:selectedId,
         permissionsStr:menuStr,
-        type:'ok'
+        varType:'ok'
     },
     function(data){
            if(data=='true'){
@@ -161,7 +161,7 @@ function saveMenu(menuStr){
 function alertMessage(value){
         dhtmlx.message({
 		title: "消息提示",
-                type: "alert",
+                varType: "alert",
 		text: value
         });
 }
@@ -169,16 +169,16 @@ function alertMessage(value){
     </head>
     <body onload="doOnLoad();">
         <div id="menuDiv">
-                    <input type="hidden" name="roleID" value="" id="txtRoleID" />
+                    <input varType="hidden" name="roleID" value="" id="txtRoleID" />
                     <c:forEach var="mt" items="${mtList}">
                     <div style="border:solid; border-width:1px; border-color:#ccc; margin:10px; ">
                         <p class="role_title_cls">
-                            <input name="menutype" type="checkbox" value="${mt.id}" id="menutype_${mt.id}" class="role_menutype"  />
+                            <input name="menutype" varType="checkbox" value="${mt.id}" id="menutype_${mt.id}" class="role_menutype"  />
                             <label for="menutype_${mt.id}">${mt.menuTypeName}</label>
                         </p>
                         <c:forEach var="item" items="${mt.menuItems}">
                             <div class="role_item_cls" >
-                                <input name="menu" type="checkbox" value="${item.id}" id="menu_${item.id}" class="role_menuitem menuitem_${mt.id}" parentid="${mt.id}" />
+                                <input name="menu" varType="checkbox" value="${item.id}" id="menu_${item.id}" class="role_menuitem menuitem_${mt.id}" parentid="${mt.id}" />
                                 <label for="menu_${item.id}">${item.menuItemName}</label>
                             </div>
                         </c:forEach>

@@ -1,11 +1,11 @@
 package com.ht.scada.communication.service.impl;
 
-import com.ht.scada.communication.kv.KeyDefinition;
-import com.ht.scada.communication.kv.RunOperation;
-import com.ht.scada.communication.kv.ValueDefinition;
-import com.ht.scada.communication.kv.WriteOperations;
+import com.ht.scada.communication.data.kv.*;
 import com.ht.scada.communication.service.DataService;
-import com.ht.scada.data.kv.*;
+import com.ht.scada.communication.util.kv.KeyDefinition;
+import com.ht.scada.communication.util.kv.RunOperation;
+import com.ht.scada.communication.util.kv.ValueDefinition;
+import com.ht.scada.communication.util.kv.WriteOperations;
 import oracle.kv.*;
 import org.joda.time.LocalDateTime;
 

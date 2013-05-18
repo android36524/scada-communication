@@ -122,7 +122,7 @@
 	</session-config>
 
 	<error-page>
-		<exception-type>java.lang.Throwable</exception-type>
+		<exception-varType>java.lang.Throwable</exception-varType>
 		<location>/WEB-INF/views/error/500.jsp</location>
 	</error-page>
 	<error-page>

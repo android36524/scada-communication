@@ -1,5 +1,7 @@
 package com.ht.scada.communication.util;
 
+import com.ht.scada.common.tag.util.VarGroupEnum;
+
 import java.util.Calendar;
 
 /**
@@ -17,7 +19,7 @@ public class CommUtil {
      * @param interval 存储间隔
      * @return
      */
-    public static String createRTUHisDataKey(VarGroup varGroup, Calendar cal, int interval) {
+    public static String createRTUHisDataKey(VarGroupEnum varGroup, Calendar cal, int interval) {
         int minute = cal.get(Calendar.MINUTE);
         minute = minute / interval * interval;
         cal.set(Calendar.MINUTE, minute);

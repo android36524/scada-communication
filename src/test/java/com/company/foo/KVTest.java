@@ -1,7 +1,7 @@
 package com.company.foo;
 
+import com.ht.scada.common.tag.util.VarGroupEnum;
 import com.ht.scada.communication.data.kv.VarGroupData;
-import com.ht.scada.communication.util.VarGroup;
 import org.xerial.snappy.Snappy;
 
 import java.io.*;
@@ -41,7 +41,7 @@ public class KVTest {
 		
 		VarGroupData data = new VarGroupData();
 		data.setCode("youjing_bianhao");
-		data.setGroup(VarGroup.DIAN_XB);
+		data.setGroup(VarGroupEnum.DIAN_XB);
 		data.setDatetime(new Date());
 		
 		data.getYxValueMap().put("varA", true);

@@ -3,12 +3,12 @@
 <html lang="zh" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-    <title>主页</title>
-    <!--<script varType="text/javascript" src="../../resources/js/jquip.minValue.js" th:src="@{/resources/js/jquip.events.minValue.js}"></script>-->
-    <script varType="text/javascript" src="../../resources/js/jquery.tools.minValue.js" th:src="@{/resources/js/jquery.tools.minValue.js}"></script>
+    <title>编辑</title>
+    <!--<script type="text/javascript" src="../../resources/js/jquip.minValue.js" th:src="@{/resources/js/jquip.events.minValue.js}"></script>-->
+    <script type="text/javascript" src="../../resources/js/jquery.tools.min.js" th:src="@{/resources/js/jquery.tools.min.js}"></script>
     <link href="../../resources/css/style.css" th:href="@{/resources/css/style.css}" rel="stylesheet"/>
 
-    <script varType="text/javascript">
+    <script type="text/javascript">
         function modeChanged() {
             var mode = $("#mode").val();
             if (mode == 'single') {
@@ -46,17 +46,17 @@
             <tr th:hidden="${not isSlaver}" id="host">
                 <td>主机地址</td>
                 <td>
-                    <input name="masterHost" varType="text" value="localhost" th:value="${masterHost}" />
+                    <input name="masterHost" type="text" value="localhost" th:value="${masterHost}" />
                 </td>
             </tr>
             <tr th:hidden="${isSingle}" id="port">
                 <td>主机端口</td>
                 <td>
-                    <input name="masterPort" varType="text" value="4660" th:value="${masterPort}" />
+                    <input name="masterPort" type="text" value="4660" th:value="${masterPort}" />
                 </td>
             </tr>
         </table>
-        <input varType="submit" value="提交" onsubmit="onSubmit()" />
+        <input type="submit" value="提交" onsubmit="onSubmit()" />
     </form>
 </div>
 </body>

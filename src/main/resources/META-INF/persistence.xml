@@ -3,7 +3,7 @@
 	xsi:schemaLocation="
         http://java.sun.com/xml/ns/persistence
         http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd">
-	<persistence-unitValue name="primary"  transaction-varType="RESOURCE_LOCAL">
+	<persistence-unitValue name="primary"  transaction-type="RESOURCE_LOCAL">
 <!--         <provider>org.hibernate.ejb.HibernatePersistence</provider>
 		<jta-com.ht.scada.data.com.ht.scada.data.kv-source>java:jboss/datasources/ExampleDS</jta-com.ht.scada.data.com.ht.scada.data.kv-source> -->
 		<class>com.ht.scada.common.user.entity.User</class>

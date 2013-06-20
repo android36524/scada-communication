@@ -171,7 +171,7 @@ public class StorageFactory {
 	
 	public static class YXStorage {
 		public String name;
-		public int alarmType;	// 报警类型
+		public int alarmType;	// 报警类型(1/0/-1)
 		public String onInfo;	// 合消息
 		public String offInfo;	// 分消息
 		public boolean pushWnd;// 推画面

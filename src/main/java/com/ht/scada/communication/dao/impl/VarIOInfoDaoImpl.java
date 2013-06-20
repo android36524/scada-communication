@@ -3,8 +3,6 @@ package com.ht.scada.communication.dao.impl;
 import com.ht.scada.communication.dao.VarIOInfoDao;
 import com.ht.scada.communication.entity.VarIOInfo;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -16,14 +14,6 @@ import java.util.List;
 public class VarIOInfoDaoImpl extends BaseDaoImpl<VarIOInfo> implements VarIOInfoDao {
     @Override
     public List<VarIOInfo> getAll() {
-        List<VarIOInfo> list = null;
-        try {
-            list = query(VarIOInfo.class, "SELECT id, endTag as endTagId, varName, " +
-                    "base_value as baseValue, coef_value as coefValue from T_Var_IO_Info");
-        } catch (SQLException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-            list = new ArrayList<VarIOInfo>();
-        }
-        return list;
+        return getDbUtilsTemplate().find(VarIOInfo.class, "SELECT * from T_Var_IO_Info");
     }
 }

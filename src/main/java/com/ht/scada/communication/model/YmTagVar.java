@@ -3,7 +3,6 @@ package com.ht.scada.communication.model;
 import com.ht.scada.communication.entity.TagVarTpl;
 
 import java.util.Date;
-import java.util.Map;
 
 public class YmTagVar extends TagVar {
 
@@ -44,9 +43,8 @@ public class YmTagVar extends TagVar {
      * 计算并更新变量值, 计算公式为：value * coefValue + baseValue
      * @param value
      * @param datetime
-     * @param realtimeDataMap
      */
-    public void update(double value, Date datetime, Map<String, String> realtimeDataMap) {
+    public void update(double value, Date datetime) {
         // 实时数据更新
         if (Double.isNaN(value)) {
             return;
@@ -54,7 +52,7 @@ public class YmTagVar extends TagVar {
         value = calcValue(value);
         if (Double.isNaN(this.lastYmValue) || this.lastYmValue != value) {
             this.lastYmValue = value;
-            realtimeDataMap.put(getRTKey(), Double.toString(value));
+            endTagWrapper.getRealtimeDataMap().put(getTpl().getVarName(), Double.toString(value));
         }
 
     }

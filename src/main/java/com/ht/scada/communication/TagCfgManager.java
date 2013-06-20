@@ -2,16 +2,12 @@ package com.ht.scada.communication;
 
 import com.ht.scada.communication.dao.EndTagDao;
 import com.ht.scada.communication.dao.TagVarTplDao;
-import com.ht.scada.communication.dao.VarGroupDao;
+import com.ht.scada.communication.dao.VarGroupInfoDao;
 import com.ht.scada.communication.dao.VarIOInfoDao;
-import com.ht.scada.communication.dao.impl.EndTagDaoImpl;
-import com.ht.scada.communication.dao.impl.TagVarTplDaoImpl;
-import com.ht.scada.communication.dao.impl.VarGroupDaoImpl;
-import com.ht.scada.communication.dao.impl.VarIOInfoDaoImpl;
+import com.ht.scada.communication.entity.EndTag;
 import com.ht.scada.communication.entity.TagVarTpl;
 import com.ht.scada.communication.entity.VarGroupInfo;
 import com.ht.scada.communication.entity.VarIOInfo;
-import com.ht.scada.communication.entity.EndTag;
 import com.ht.scada.communication.model.EndTagWrapper;
 import com.ht.scada.communication.model.TagVarTplWrapper;
 import org.slf4j.Logger;
@@ -30,7 +26,7 @@ class TagCfgManager {
     }
 
     private EndTagDao endTagDao;
-    private VarGroupDao varGroupDao;
+    private VarGroupInfoDao varGroupInfoDao;
     private VarIOInfoDao varIOInfoDao;
     private TagVarTplDao tagVarTplDao;
 
@@ -39,10 +35,10 @@ class TagCfgManager {
     private List<EndTag> endTagList;
 
     private TagCfgManager() {
-        endTagDao = new EndTagDaoImpl();
-        varGroupDao = new VarGroupDaoImpl();
-        varIOInfoDao = new VarIOInfoDaoImpl();
-        tagVarTplDao = new TagVarTplDaoImpl();
+        endTagDao = DataBaseManager.getInstance().getEndTagDao();
+        varGroupInfoDao = DataBaseManager.getInstance().getVarGroupInfoDao();
+        varIOInfoDao = DataBaseManager.getInstance().getVarIOInfoDao();
+        tagVarTplDao = DataBaseManager.getInstance().getTagVarTplDao();
     }
 
     /**
@@ -59,7 +55,7 @@ class TagCfgManager {
 	 */
 	private void initEndTag() {
 		// 加载变量组配置
-		List<VarGroupInfo> varGroupInfos = varGroupDao.getAll();
+		List<VarGroupInfo> varGroupInfos = varGroupInfoDao.getAll();
 		// 解析末端配置
         endTagList = endTagDao.getAll();
 		

@@ -4,11 +4,10 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <title>主页</title>
-    <!--<script varType="text/javascript" src="../../resources/js/jquip.minValue.js" th:src="@{/resources/js/jquip.events.minValue.js}"></script>-->
-    <script varType="text/javascript" src="../../resources/js/jquery.tools.minValue.js" th:src="@{/resources/js/jquery.tools.minValue.js}"></script>
+    <script type="text/javascript" src="../../resources/js/jquery.tools.min.js" th:src="@{/resources/js/jquery.tools.min.js}"></script>
     <link href="../../resources/css/style.css" th:href="@{/resources/css/style.css}" rel="stylesheet"/>
 
-    <script varType="text/javascript">
+    <script type="text/javascript">
         function search() {
             var text = $("#search").val();
             $("#tbContent tr").not(":contains('"+text+"')").hide();
@@ -34,10 +33,10 @@
 <div class="clear" id="nav">
     <ul>
         <li class="active">
-            <a href="javascript:void(0);">主页</a>
+            <a href="index.html" th:href="@{/}">主页</a>
         </li>
         <li>
-            <a href="/channel">采集通道</a>
+            <a th:href="@{/channels}" href="channels.html">采集通道</a>
         </li>
     </ul>
 </div>
@@ -45,9 +44,9 @@
 
     <div th:if="${message}" th:text="${message}" class="msg-info" style="margin-bottom: 5px;"></div>
 
-    <input varType="button" value="启动" th:disabled="${running}" onclick="start()"/>
-    <input varType="button" value="停止" th:disabled="${not running}" onclick="stop()"/>
-    <input varType="button" value="设置" onclick="edit()" />
+    <input type="button" value="启动" th:disabled="${running}" onclick="start()"/>
+    <input type="button" value="停止" th:disabled="${not running}" onclick="stop()"/>
+    <input type="button" value="设置" onclick="edit()" />
     <table class="dataintable" style="width:300px; margin-top: 10px">
         <tbody>
         <tr>

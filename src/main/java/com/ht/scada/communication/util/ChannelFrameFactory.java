@@ -3,6 +3,21 @@ package com.ht.scada.communication.util;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 通讯帧解析器<br>
+ * <p><b>modbus</b>: 【设备地址】|【功能码】-【数据地址】-【数据长度】|【优先级】|【帧名称(可省略)】<br>
+ * 多个通讯帧用逗号隔开, 遥控帧优先级设置为0<br>
+ * 1|3-1-10|3|<br>
+ * 1|3-100-10|0|soe<br>
+ * 1-10 13-23|3-1-10|3| 设备地址从1-10, 13-23的连续地址 * </p>
+ * <p><b>iec104</b>: 【召唤类型编码】-【执行间隔(s)】|【帧名称(可省略)】<br>
+ * 多个通讯帧用逗号隔开, 帧间隔设置为0表示只在第一次建立连接时召唤<br>
+ * 0x64-10|总召唤<br>
+ * 0x65-1200|召唤电能<br>
+ * 0x8e-600|召唤定时示功图数据<br>
+ *     历史数据召唤间隔必须设置为最大的存储间隔
+ * </p>
+ */
 public class ChannelFrameFactory {
 	
 	public static List<ModbusFrame> parseModbusFrames(String frames) throws IllegalArgumentException {

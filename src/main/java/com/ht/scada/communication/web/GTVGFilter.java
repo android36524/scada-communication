@@ -14,6 +14,7 @@ public class GTVGFilter implements Filter {
 
 
     private ServletContext servletContext;
+    private final String encoding = "UTF-8";
 
 
     public GTVGFilter() {
@@ -33,6 +34,8 @@ public class GTVGFilter implements Filter {
                          final FilterChain chain) throws IOException, ServletException {
         addUserToSession((HttpServletRequest) request);
         if (!process((HttpServletRequest) request, (HttpServletResponse) response)) {
+//            request.setCharacterEncoding(encoding);
+//            response.setCharacterEncoding(encoding);
             chain.doFilter(request, response);
         }
     }

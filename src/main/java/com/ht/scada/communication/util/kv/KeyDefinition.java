@@ -7,9 +7,9 @@
 
 package com.ht.scada.communication.util.kv;
 
-import com.ht.scada.communication.data.kv.FaultRecord;
-import com.ht.scada.communication.data.kv.OffLimitsRecord;
-import com.ht.scada.communication.data.kv.YXData;
+import com.ht.scada.communication.entity.FaultRecord;
+import com.ht.scada.communication.entity.OffLimitsRecord;
+import com.ht.scada.communication.entity.YxRecord;
 import oracle.kv.Key;
 import org.joda.time.LocalDateTime;
 
@@ -41,7 +41,7 @@ public class KeyDefinition {
      * @param data
      * @return
      */
-    public static Key makeYXDataKey(YXData data) {
+    public static Key makeYXDataKey(YxRecord data) {
     	return createKey(YX_RECORD, data.getCode(), data.getName(), data.getDatetime());
     }
     
@@ -98,7 +98,7 @@ public class KeyDefinition {
      * @param key
      * @param data
      */
-    private static YXData parseYXDataKey(Key key, YXData data) {
+    private static YxRecord parseYXDataKey(Key key, YxRecord data) {
         final List<String> majorPath = key.getMajorPath();
 
         if (!YX_RECORD.equals(majorPath.get(1))) {
@@ -161,8 +161,8 @@ public class KeyDefinition {
      */
     public static <T> T parseKey(Key key, T data) {
         
-        if (data instanceof YXData) {
-        	parseYXDataKey(key, (YXData) data);
+        if (data instanceof YxRecord) {
+        	parseYXDataKey(key, (YxRecord) data);
 		} else if (data instanceof FaultRecord) {
         	parseFaultRecordKey(key, (FaultRecord) data);
 		} else if (data instanceof OffLimitsRecord) {

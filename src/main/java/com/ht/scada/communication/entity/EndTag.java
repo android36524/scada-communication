@@ -22,12 +22,12 @@ public class EndTag {
 	/**
 	 * 节点类型<br>
 	 * 不同的节点类型有对应的扩展信息表<br>
-	 * varType=="配电回路" TagExtPower.class<br>
-	 * varType=="油井A/B/C/D"
+	 * type=="配电回路" TagExtPower.class<br>
+	 * type=="油井A/B/C/D"
 	 * TagExtOilA.class,TagExtOilB.class,TagExtOilC.class,TagExtOilD.class<br>
-	 * varType=="水井" TagExtWater.class<br>
+	 * type=="水井" TagExtWater.class<br>
 	 */
-	private String varType;
+	private String type;
 	
 	/**
 	 * 节点子类型
@@ -84,12 +84,12 @@ public class EndTag {
         this.code = code;
     }
 
-    public String getVarType() {
-        return varType;
+    public String getType() {
+        return type;
     }
 
-    public void setVarType(String varType) {
-        this.varType = varType;
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getSubType() {

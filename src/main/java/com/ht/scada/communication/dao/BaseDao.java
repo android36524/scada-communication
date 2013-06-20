@@ -1,8 +1,7 @@
 package com.ht.scada.communication.dao;
 
-import org.apache.commons.dbutils.QueryRunner;
+import com.ht.db.util.DbUtilsTemplate;
 
-import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -12,7 +11,7 @@ import java.util.List;
  * To change this template use File | Settings | File Templates.
  */
 public interface BaseDao<T> {
-    QueryRunner getQueryRunner();
+    void setDbUtilsTemplate(DbUtilsTemplate dbUtilsTemplate);
+    DbUtilsTemplate getDbUtilsTemplate();
     List<T> getAll();
-    List<T> query(Class<T> clazz, String sql, Object ...params) throws SQLException;
 }

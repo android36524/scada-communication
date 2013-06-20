@@ -34,6 +34,7 @@
   <logger name="org.springframework.scheduling.quartz" level="WARN"/>
   <logger name="org.springframework.data.jpa" level="DEBUG"/>
   <logger name="com.ht" level="DEBUG"/>
+    <logger name="com.ht.iec104" level="INFO"/>
   <root level="ERROR">
     <appender-ref ref="stdout"/>
     <appender-ref ref="logfile"/>

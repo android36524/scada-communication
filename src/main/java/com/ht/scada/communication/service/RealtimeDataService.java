@@ -1,9 +1,9 @@
 package com.ht.scada.communication.service;
 
-import com.ht.scada.communication.util.VarGroup;
-import com.ht.scada.communication.util.VarSubType;
+import com.ht.scada.communication.entity.FaultRecord;
+import com.ht.scada.communication.entity.OffLimitsRecord;
+import com.ht.scada.communication.entity.YxRecord;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,54 +18,29 @@ import java.util.Map;
  */
 public interface RealtimeDataService {
 
+    void putValus(Map<String, String> kvMap);
 
-//    Map<String, Float> getBatchFloatValue(String code, String[] name);
-//	Map<String, Double> getBatchDoubleValue(String code, String[] name);
-//	Map<String, Boolean> getBatchBoolValue(String code, String[] name);
-    String[] getBatchValue(String code, String[] name);
+    void setEndModelGroupVar(String code, Map<String, String> groupVarMap);
 
     /**
-     * 批量保存数据
+     *批量更新监控对象实时数据(遥测、遥信、遥脉)
+     * @param code 监控对象编号
      * @param kvMap
      */
-	void putBatchValue(Map<String, String> kvMap);
-
-    void putValue(String key, String value);
-    String getValue(String key);
+    void updateEndModel(String code, Map<String, String> kvMap);
 
     /**
-     * 获取末端指定变量组的所有变量值
-     * @param code
-     * @param group
-     * @return
+     *批量更新监控对象遥测数组实时数据
+     * @param code 监控对象编号
+     * @param kvMap
      */
-    Map<VarSubType, String> getEndTagVarGroupInfo(String code, VarGroup group);
+    void updateEndModelYcArray(String code, Map<String, String> kvMap);
 
-    /**
-     * 获取末端指定变量的值
-     * @param group
-     * @param code
-     * @param varType
-     * @return
-     */
-    String getEndTagVarInfo(String code, VarGroup group, VarSubType varType);
+    void faultOccured(FaultRecord record);
+    void faultResumed(FaultRecord record);
 
-    /**
-     * 批量获取末端指定变量的值
-     * @param group
-     * @param code
-     * @param varType
-     * @return
-     */
-    Map<String, String> getEndTagVarInfo(List<String> code, VarGroup group, VarSubType varType);
+    void offLimitsOccured(OffLimitsRecord record);
+    void offLimitsResumed(OffLimitsRecord record);
 
-    /**
-     * 获取曲线数据
-     * @param code
-     * @param group
-     * @param varType
-     * @return
-     */
-    Object[][] getEndTagVarLineData(String code, VarGroup group, VarSubType varType);
-
+    void yxChanged(YxRecord record);
 }

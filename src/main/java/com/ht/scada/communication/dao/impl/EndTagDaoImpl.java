@@ -3,8 +3,6 @@ package com.ht.scada.communication.dao.impl;
 import com.ht.scada.communication.dao.EndTagDao;
 import com.ht.scada.communication.entity.EndTag;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -16,13 +14,6 @@ import java.util.List;
 public class EndTagDaoImpl extends BaseDaoImpl<EndTag> implements EndTagDao {
     @Override
     public List<EndTag> getAll() {
-        List<EndTag> list = null;
-        try {
-            list = query(EndTag.class, "SELECT * from T_End_Tag WHERE channel_idx IS NOT NULL AND device_addr IS NOT NULL");
-        } catch (SQLException e) {
-            e.printStackTrace();
-            list = new ArrayList<EndTag>();
-        }
-        return list;
+        return getDbUtilsTemplate().find(EndTag.class, "SELECT * from T_End_Tag WHERE channel_idx IS NOT NULL AND device_addr IS NOT NULL");
     }
 }

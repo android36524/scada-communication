@@ -13,27 +13,79 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 public enum Config {
     INSTANCE;
 
-    private ServiceMode mode;
-    private String url;//http://127.0.0.1:80
-    private String masterHost;
-    private int masterPort;
-    private int webPort;
     private PropertiesConfiguration config;
 
+    /**
+     *
+     */
+    private String url;//http://127.0.0.1:80
+    private int webPort;
+
+    /**
+     * 工作模式设置
+     */
+    private ServiceMode mode;
+    /**
+     * 主机地址
+     */
+    private String masterHost;
+    /**
+     * 主机工作端口
+     */
+    private int masterPort;
+
+    /**
+     * nosql数据库地址和端口
+     */
+    private String[] kvHostPort;
+    /**
+     * nosql数据库kvStore名称
+     */
+    private String kvStoreName;
+
+    private String redisHost = "localhost";
+    private int redisPort = 6379;
+    private int redisMaxActive = 20;
+    private int redisMaxIdle = 60000;
+    private int redisMaxWait = 10000;
+    private String redisPassword;
+    private int redisTimeout;
+
     private Config() {
+    }
+
+    public void init(String configPath) {
         try {
-            config = new PropertiesConfiguration("config.properties");
+            config = new PropertiesConfiguration(configPath);
             config.setAutoSave(true);
+
             url = config.getString("url");
+            webPort = config.getInt("web.port", 8080);
+
             mode = ServiceMode.valueOf(config.getString("mode", "single").toUpperCase());
             if (mode == ServiceMode.SLAVER) {
                 masterHost = config.getString("master.host");
             }
             masterPort = config.getInt("master.port", 4660);
-            webPort = config.getInt("web.port", 8080);
+
+            kvHostPort = config.getStringArray("kv.hostPort");
+            kvStoreName = config.getString("kv.storeName");
+
+            redisHost = config.getString("redis.host");
+            redisPort = config.getInt("redis.port",6379);
+            redisMaxActive = config.getInt("redis.maxActive", 20);
+            redisMaxIdle = config.getInt("redis.maxIdle", 60000);
+            redisMaxWait = config.getInt("redis.maxWait", 10000);
+            redisTimeout = config.getInt("redis.timeout", 2000);
+            redisPassword = config.getString("redis.password");
+
         } catch (ConfigurationException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace();
         }
+    }
+
+    public PropertiesConfiguration getConfig() {
+        return config;
     }
 
     public ServiceMode getMode() {
@@ -78,5 +130,86 @@ public enum Config {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public String[] getKvHostPort() {
+        return kvHostPort;
+    }
+
+    public void setKvHostPort(String[] kvHostPort) {
+        this.kvHostPort = kvHostPort;
+        config.setProperty("kvHostPort", kvHostPort);
+    }
+
+    public String getKvStoreName() {
+        return kvStoreName;
+    }
+
+    public void setKvStoreName(String kvStoreName) {
+        this.kvStoreName = kvStoreName;
+        config.setProperty("kv.storeName", kvStoreName);
+    }
+
+    public String getRedisHost() {
+        return redisHost;
+    }
+
+    public void setRedisHost(String redisHost) {
+        this.redisHost = redisHost;
+        config.setProperty("redis.host", redisHost);
+    }
+
+    public int getRedisPort() {
+        return redisPort;
+    }
+
+    public void setRedisPort(int redisPort) {
+        this.redisPort = redisPort;
+        config.setProperty("redis.port", redisPort);
+    }
+
+    public int getRedisMaxActive() {
+        return redisMaxActive;
+    }
+
+    public void setRedisMaxActive(int redisMaxActive) {
+        this.redisMaxActive = redisMaxActive;
+        config.setProperty("redis.maxActive", redisMaxActive);
+    }
+
+    public int getRedisMaxIdle() {
+        return redisMaxIdle;
+    }
+
+    public void setRedisMaxIdle(int redisMaxIdle) {
+        this.redisMaxIdle = redisMaxIdle;
+        config.setProperty("redis.maxIdle", redisMaxIdle);
+    }
+
+    public int getRedisMaxWait() {
+        return redisMaxWait;
+    }
+
+    public void setRedisMaxWait(int redisMaxWait) {
+        this.redisMaxWait = redisMaxWait;
+        config.setProperty("redis.maxWait", redisMaxWait);
+    }
+
+    public int getRedisTimeout() {
+        return redisTimeout;
+    }
+
+    public void setRedisTimeout(int redisTimeout) {
+        this.redisTimeout = redisTimeout;
+        config.setProperty("redis.timeout", redisTimeout);
+    }
+
+    public String getRedisPassword() {
+        return redisPassword;
+    }
+
+    public void setRedisPassword(String redisPassword) {
+        this.redisPassword = redisPassword;
+        config.setProperty("redis.password", redisPassword);
     }
 }

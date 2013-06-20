@@ -24,30 +24,27 @@ public class MasterServerHandler extends ChannelInboundMessageHandlerAdapter<Str
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, String msg) throws Exception {
-        log.info("收到信息-{}：{}", ctx.channel().remoteAddress().toString(), msg);
+        log.info("主机模式：收到从机信息({})-{}", ctx.channel().remoteAddress().toString(), msg);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         super.exceptionCaught(ctx, cause);    //To change body of overridden methods use File | Settings | File Templates.
         if (cause instanceof ReadTimeoutException) {
-            log.info("接收超时");
+            log.info("主机模式：接收从机数据超时,即将断开连接。");
+            ctx.close();
         }
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        log.info("建立连接：{}", ctx.channel().remoteAddress().toString());
+        log.info("主机模式：已与从机建立连接-{}", ctx.channel().remoteAddress().toString());
         cb.onActive(ctx);
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        log.info("连接断开：{}", ctx.channel().remoteAddress().toString());
-    }
-
-    @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+        log.info("主机模式：与从机连接断开-{}", ctx.channel().remoteAddress().toString());
         cb.onUnregistered(ctx);
     }
 }

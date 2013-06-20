@@ -26,6 +26,10 @@ import org.slf4j.LoggerFactory;
 public class MasterServer implements IService {
     private static final Logger log = LoggerFactory.getLogger(MasterServer.class);
 
+    /**
+     * 读超时时间（心跳信号超时时间）
+     */
+    private final int readTimeout = 10;
     private volatile boolean running = false;
     private volatile boolean clientConnected = false;
     private int port;
@@ -55,7 +59,7 @@ public class MasterServer implements IService {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
                         ch.pipeline().addLast(
-                                new ReadTimeoutHandler(10),
+                                new ReadTimeoutHandler(readTimeout),
                                 new LineBasedFrameDecoder(80),
                                 new StringDecoder(CharsetUtil.UTF_8),
                                 new MasterServerHandler(new CallbackNotifier() {

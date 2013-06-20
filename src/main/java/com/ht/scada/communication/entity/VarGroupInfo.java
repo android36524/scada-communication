@@ -1,6 +1,9 @@
 package com.ht.scada.communication.entity;
 
-import com.ht.scada.communication.util.VarGroup;
+import com.ht.scada.common.tag.util.VarGroupEnum;
+
+import javax.persistence.Entity;
+import javax.persistence.Table;
 
 /**
  * 变量分组配置信息，包括分组名称，存储间隔
@@ -8,12 +11,14 @@ import com.ht.scada.communication.util.VarGroup;
  * @author 薄成文
  * 
  */
+@Entity
+@Table(name="T_Var_Group_Cfg")
 public class VarGroupInfo {
 
     private int id;
-	private VarGroup varGroup;
-	private String name;// 分组名称
-	
+	private VarGroupEnum name;
+    private String value;
+
 	private int intvl = 0;// 存储间隔
 
     public int getId() {
@@ -24,21 +29,21 @@ public class VarGroupInfo {
         this.id = id;
     }
 
-    public VarGroup getVarGroup() {
-		return varGroup;
-	}
-
-	public void setVarGroup(String varGroup) {
-		this.varGroup = VarGroup.valueOf(varGroup);
-	}
-
-	public String getName() {
+    public VarGroupEnum getName() {
 		return name;
 	}
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public void setName(VarGroupEnum name) {
+        this.name = name;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
 
     /**
      * 存储间隔(分钟)

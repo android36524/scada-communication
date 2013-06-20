@@ -1,9 +1,11 @@
 package com.ht.scada.communication.entity;
 
-import com.ht.scada.communication.util.DataType;
-import com.ht.scada.communication.util.VarGroup;
-import com.ht.scada.communication.util.VarSubType;
-import com.ht.scada.communication.util.VarType;
+import com.ht.scada.common.tag.util.DataType;
+import com.ht.scada.common.tag.util.VarGroupEnum;
+import com.ht.scada.common.tag.util.VarSubTypeEnum;
+import com.ht.scada.common.tag.util.VarTypeEnum;
+
+import javax.persistence.*;
 
 /**
  * 变量词典模板<br>
@@ -15,41 +17,63 @@ import com.ht.scada.communication.util.VarType;
  * @author 赵磊
  * 
  */
+@Entity
+@Table(name="T_Tag_Cfg_Tpl")
 public class TagVarTpl {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private int id;
+
+    @Column(name = "tpl_name")
 	private String tplName;// 模板名称
 
 	/* 变量属性 */
+    @Column(name = "var_name")
 	private String varName; // 变量key,用于程序脚本
+    @Column(name = "tag_name")
 	private String tagName;	//变量名，中文
-	private VarGroup varGroup; // 变量分组,可以为空
-	private VarType varType; // 变量类型
-	private VarSubType subType; // 变量子类型
-	
+    @Column(name = "var_group")
+	private VarGroupEnum varGroup; // 变量分组,可以为空
+    @Column(name = "var_type")
+	private VarTypeEnum varType; // 变量类型
+    @Column(name = "sub_type")
+	private VarSubTypeEnum subType; // 变量子类型
 
 	/* IO信息 */
+    @Column(name = "fun_code")
 	private int funCode = -1; // 功能码
+    @Column(name = "data_id")
 	private int dataId = -1; // 数据ID
+    @Column(name = "byte_offset")
 	private int byteOffset = 0; // 字节偏移量
+    @Column(name = "bit_offset")
 	private int bitOffset = -1; // 位偏移量(-1表)
+    @Column(name = "byte_len")
 	private int byteLen = -1; // 字节长度
-	private DataType dataType; // 值类型（bool, int32, int16, bcd, mod10000, float,
-								// double）
+    @Column(name = "data_type")
+	private DataType dataType; // 值类型（bool, int32, int16, bcd, mod10000, float, double）
+    @Column(name = "base_value")
 	private Float baseValue;// 基值
+    @Column(name = "coef_value")
 	private Float coefValue;// 系数
 
 	/* YM信息 */
+    @Column(name = "max_value")
 	private Double maxValue;// 最大值
+    @Column(name = "min_value")
 	private Double minValue;// 最小值
+    @Column(name = "unit_value")
 	private Integer unitValue;// 遥脉单位
 
 	/* 变量扩展属性 */
+    @Column(name = "trigger_name")
 	private String triggerName; // 触发采集帧名,如"soe", 需要与采集通道中定义的帧名称对应
 
 	/**
 	 * 存储器
 	 */
+    @Column(name = "var_storage")
 	private String varStorage = "ym|0|599999999|1|0";
 
     public int getId() {
@@ -84,28 +108,28 @@ public class TagVarTpl {
         this.tagName = tagName;
     }
 
-    public VarGroup getVarGroup() {
+    public VarGroupEnum getVarGroup() {
         return varGroup;
     }
 
-    public void setVarGroup(String varGroup) {
-        this.varGroup = VarGroup.valueOf(varGroup);
+    public void setVarGroup(VarGroupEnum varGroup) {
+        this.varGroup = varGroup;
     }
 
-    public VarType getVarType() {
+    public VarTypeEnum getVarType() {
         return varType;
     }
 
-    public void setVarType(String varType) {
-        this.varType = VarType.valueOf(varType);
+    public void setVarType(VarTypeEnum varType) {
+        this.varType = varType;
     }
 
-    public VarSubType getSubType() {
+    public VarSubTypeEnum getSubType() {
         return subType;
     }
 
-    public void setSubType(String subType) {
-        this.subType = VarSubType.valueOf(subType);
+    public void setSubType(VarSubTypeEnum subType) {
+        this.subType = subType;
     }
 
     public int getFunCode() {
@@ -152,8 +176,8 @@ public class TagVarTpl {
         return dataType;
     }
 
-    public void setDataType(String dataType) {
-        this.dataType = DataType.valueOf(dataType);
+    public void setDataType(DataType dataType) {
+        this.dataType = dataType;
     }
 
     public Float getBaseValue() {

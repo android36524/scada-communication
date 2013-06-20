@@ -2,7 +2,7 @@ package com.ht.scada.communication.util;
 
 /**
  * 端口信息解析工具类
- * 用于解析{@link com.ht.scada.common.tag.entity.AcquisitionChannel ChannelInfo}中的端口信息[portInfo]<br>
+ * 用于解析{@link com.ht.scada.communication.entity.ChannelInfo}中的端口信息[portInfo]<br>
  * 包括：TCP/IP通讯的物理信息、DTU通讯的物理信息、 串口通讯通讯的物理信息
  * @author 薄成文
  */

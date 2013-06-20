@@ -32,12 +32,13 @@ public class GTVGApplication {
         // This will convert "home" to "/WEB-INF/templates/home.html"
         templateResolver.setPrefix("/WEB-INF/tpl/");
         templateResolver.setSuffix(".html");
+        templateResolver.setCharacterEncoding("UTF-8");
         // Set template cache TTL to 1 hour. If not set, entries would live in cache until expelled by LRU
         templateResolver.setCacheTTLMs(Long.valueOf(3600000L));
         
         // Cache is set to true by default. Set to false if you want templates to
         // be automatically updated when modified.
-        templateResolver.setCacheable(true);
+        templateResolver.setCacheable(false);
         
         templateEngine = new TemplateEngine();
         templateEngine.setTemplateResolver(templateResolver);
@@ -51,6 +52,7 @@ public class GTVGApplication {
         controllersByURL.put("/", new HomeController());
         controllersByURL.put("/main/edit", new EditController());
         controllersByURL.put("/channels", new ChannelController());
+        controllersByURL.put("/endTag", new EndModelController());
 //        controllersByURL.put("/product/list", new ProductListController());
 //        controllersByURL.put("/product/comments", new ProductCommentsController());
 //        controllersByURL.put("/order/list", new OrderListController());

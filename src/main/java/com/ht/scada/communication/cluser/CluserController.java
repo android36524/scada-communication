@@ -31,14 +31,14 @@ public class CluserController implements IService {
     public void start() {
         running = true;
         switch (Config.INSTANCE.getMode()) {
-            case SINGLE:
+            case SINGLE:// 单机模式直接启动采集
                 communicationController.startAllChannel();
                 break;
-            case MASTER:
+            case MASTER:// 主机模式直接启动采集
                 communicationController.startAllChannel();
                 startMasterServer();
                 break;
-            case SLAVER:
+            case SLAVER:// 从机模式需要判断主机状态后确定是否启动采集
                 startSlaverClient();
                 break;
         }

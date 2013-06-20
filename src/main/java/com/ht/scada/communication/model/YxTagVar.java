@@ -1,12 +1,11 @@
 package com.ht.scada.communication.model;
 
-import com.ht.scada.communication.data.kv.FaultRecord;
-import com.ht.scada.communication.data.kv.YXData;
+import com.ht.scada.communication.entity.YxRecord;
+import com.ht.scada.communication.entity.FaultRecord;
 import com.ht.scada.communication.util.StorageFactory.FaultStorage;
 import com.ht.scada.communication.util.StorageFactory.YXStorage;
 
 import java.util.Date;
-import java.util.Map;
 
 public class YxTagVar extends TagVar {
 
@@ -14,7 +13,7 @@ public class YxTagVar extends TagVar {
 	private final YXStorage yxStorage;
 
 	private FaultRecord lastFaultRecord;
-	private YXData lastYxRecord;
+	private YxRecord lastYxRecord;
 
 	private int lastYxValue = -1;// 当前遥信值
 
@@ -29,13 +28,13 @@ public class YxTagVar extends TagVar {
         return lastYxValue;
     }
 
-    public void update(boolean status, Date date, Map<String, String> realtimeDataMap) {
+    public void update(boolean status, Date date) {
         if (this.lastYxValue == -1 || this.lastYxValue != (status ? 1 : 0)) {
             this.lastYxValue = (status ? 1 : 0);
             // 处理状态类存储器
             this.handleStorage(date);
             // 加入实时数据更新队列
-            realtimeDataMap.put(getRTKey(), Boolean.toString(status));
+            endTagWrapper.getRealtimeDataMap().put(getTpl().getVarName(), Boolean.toString(status));
         }
     }
 
@@ -53,7 +52,7 @@ public class YxTagVar extends TagVar {
                     FaultRecord record = new FaultRecord(endTagWrapper.getEndTag().getCode(),
                             tpl.getVarName(), status ? storage.onInfo
                             : storage.offInfo, status, date);
-                    endTagWrapper.addFaultRecord(record);// 加入存储列表
+                    endTagWrapper.addFaultRecord(record, storage.pushWnd);// 加入存储列表
                     lastFaultRecord = record;
                 }
             } else {
@@ -67,25 +66,21 @@ public class YxTagVar extends TagVar {
                     } else {// 报警解除
                         lastRecord.setResumeTime(date);
                     }
-                    endTagWrapper.addFaultRecord(lastRecord);
+                    endTagWrapper.addFaultRecord(lastRecord, storage.pushWnd);
                 }
             }
 
         }
         if (yxStorage != null) {
             YXStorage storage = yxStorage;
-            YXData lastRecord = lastYxRecord;
-            if (lastRecord == null) {// 第一次初始化变量
-                YXData record = new YXData(endTagWrapper.getEndTag().getCode(), tpl.getVarName(),
+            YxRecord lastRecord = lastYxRecord;
+            // 是否推送消息
+            boolean pushMessage = storage.pushWnd && (storage.alarmType == -1 || (storage.alarmType == lastYxValue));
+            if (lastRecord == null || lastRecord.getValue() != status) {// 第一次初始化变量
+                YxRecord record = new YxRecord(endTagWrapper.getEndTag().getCode(), tpl.getVarName(),
                         status ? storage.onInfo : storage.offInfo, status, date);
-                endTagWrapper.addYxData(record);// 加入存储列表
+                endTagWrapper.addYxData(record, pushMessage);// 加入存储列表
                 lastYxRecord = record;
-            } else {
-                if (lastRecord.getValue() != status) {// 变位
-                    lastRecord.setValue(status);
-                    lastRecord.setDatetime(date);
-                    endTagWrapper.addYxData(lastRecord);// 加入存储列表
-                }
             }
 
         }

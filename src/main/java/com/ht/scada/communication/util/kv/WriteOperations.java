@@ -159,9 +159,9 @@ public class WriteOperations {
     /**
      * Creates a WriteOperations wrapper for a given KVStore.
      */
-    public WriteOperations(final KVStore store, final KVStoreConfig config) {
+    public WriteOperations(final KVStore store, final long defaultTimeoutMs) {
         this.store = store;
-        defaultTimeoutMs = config.getRequestTimeout(TimeUnit.MILLISECONDS);
+        this.defaultTimeoutMs = defaultTimeoutMs;// config.getRequestTimeout(TimeUnit.MILLISECONDS);
     }
 
     /**

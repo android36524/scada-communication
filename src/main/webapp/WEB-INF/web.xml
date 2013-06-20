@@ -10,6 +10,9 @@
     <!--<session-config>-->
         <!--<session-timeout>60</session-timeout>-->
     <!--</session-config>-->
+    <listener>
+        <listener-class>com.ht.scada.communication.web.ApplicationListener</listener-class>
+    </listener>
 
     <filter>
         <filter-name>gtvgfilter</filter-name>

@@ -1,13 +1,10 @@
 package com.ht.scada.communication.model;
 
-import com.ht.scada.communication.data.kv.OffLimitsRecord;
-import com.ht.scada.communication.util.DataType;
+import com.ht.scada.communication.entity.OffLimitsRecord;
+import com.ht.scada.common.tag.util.DataType;
 import com.ht.scada.communication.util.StorageFactory.OffLimitsStorage;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class YcTagVar extends TagVar {
 
@@ -67,7 +64,7 @@ public class YcTagVar extends TagVar {
      * @param value
      * @param datetime
      */
-    public void update(float value, Date datetime, Map<String, String> realtimeDataMap) {
+    public void update(float value, Date datetime) {
         if (Float.isNaN(value)) {
             return;
         }
@@ -77,7 +74,7 @@ public class YcTagVar extends TagVar {
             // 处理遥测越限记录
             handleOffLimits(datetime, value);
             // 实时数据更新
-            realtimeDataMap.put(getRTKey(), Float.toString(value));
+            endTagWrapper.getRealtimeDataMap().put(getTpl().getVarName(), Float.toString(value));
         }
     }
 
@@ -112,14 +109,34 @@ public class YcTagVar extends TagVar {
             for (OffLimitsRecord unResumedRecord : this.unResumedRecords) {
                 if (unResumedRecord.getType()) {// 上一条记录为越上限
                     if (value < unResumedRecord.getThreshold() && datetime.getTime() >= unResumedRecord.getActionTime().getTime()) {// 解除越上限
+                        // 越限恢复
                         unResumedRecord.setResumeTime(datetime);
-                        endTagWrapper.addOffLimitsRecord(unResumedRecord);
+
+                        // todo 还有更高效的办法来获取pushWnd吗？
+                        boolean pushMessage = true;
+                        for (OffLimitsStorage storage : offLimitsStorages) {
+                            if (storage.threshold == unResumedRecord.getThreshold()) {
+                                pushMessage = storage.pushWnd;
+                                break;
+                            }
+                        }
+                        endTagWrapper.addOffLimitsRecord(unResumedRecord, pushMessage);
                         resumedRecords.add(unResumedRecord);
+                        //UUID.randomUUID()
                     }
                 } else {// 上一条记录为越下限
                     if (value > unResumedRecord.getThreshold() && datetime.getTime() >= unResumedRecord.getActionTime().getTime()) {// 解除越下限
+                        // 越限恢复
                         unResumedRecord.setResumeTime(datetime);
-                        endTagWrapper.addOffLimitsRecord(unResumedRecord);
+                        // todo 还有更高效的办法来获取pushWnd吗？
+                        boolean pushMessage = true;
+                        for (OffLimitsStorage storage : offLimitsStorages) {
+                            if (storage.threshold == unResumedRecord.getThreshold()) {
+                                pushMessage = storage.pushWnd;
+                                break;
+                            }
+                        }
+                        endTagWrapper.addOffLimitsRecord(unResumedRecord, pushMessage);
                         resumedRecords.add(unResumedRecord);
                     }
                 }
@@ -142,7 +159,7 @@ public class YcTagVar extends TagVar {
                                 endTagWrapper.getEndTag().getCode(), tpl.getVarName(),
                                 storage.info, value, storage.threshold,
                                 false, datetime);
-                        endTagWrapper.addOffLimitsRecord(record);
+                        endTagWrapper.addOffLimitsRecord(record, storage.pushWnd);
                         this.unResumedRecords.add(record);
                     }
                     break;
@@ -164,7 +181,7 @@ public class YcTagVar extends TagVar {
                                 endTagWrapper.getEndTag().getCode(), tpl.getVarName(),
                                 storage.info, value, storage.threshold,
                                 true, datetime);
-                        endTagWrapper.addOffLimitsRecord(record);
+                        endTagWrapper.addOffLimitsRecord(record, storage.pushWnd);
                         this.unResumedRecords.add(record);
                     }
                     break;
@@ -188,13 +205,13 @@ public class YcTagVar extends TagVar {
                 if (unResumedRecord.getType()) {// 上一条记录为越上限
                     if (value < unResumedRecord.getThreshold() && datetime.getTime() >= unResumedRecord.getActionTime().getTime()) {// 解除越上限
                         unResumedRecord.setResumeTime(datetime);
-                        endTagWrapper.addOffLimitsRecord(unResumedRecord);
+                        endTagWrapper.addOffLimitsRecord(unResumedRecord, false);
                         resumedRecords.add(unResumedRecord);
                     }
                 } else {// 上一条记录为越下限
                     if (value > unResumedRecord.getThreshold() && datetime.getTime() >= unResumedRecord.getActionTime().getTime()) {// 解除越下限
                         unResumedRecord.setResumeTime(datetime);
-                        endTagWrapper.addOffLimitsRecord(unResumedRecord);
+                        endTagWrapper.addOffLimitsRecord(unResumedRecord, false);
                         resumedRecords.add(unResumedRecord);
                     }
                 }
@@ -217,7 +234,7 @@ public class YcTagVar extends TagVar {
                                 endTagWrapper.getEndTag().getCode(), tpl.getVarName(),
                                 storage.info, value, storage.threshold,
                                 false, datetime);
-                        endTagWrapper.addOffLimitsRecord(record);
+                        endTagWrapper.addOffLimitsRecord(record, false);
                         this.unResumedRtuRecords.add(record);
                     }
                     break;
@@ -239,7 +256,7 @@ public class YcTagVar extends TagVar {
                                 endTagWrapper.getEndTag().getCode(), tpl.getVarName(),
                                 storage.info, value, storage.threshold,
                                 true, datetime);
-                        endTagWrapper.addOffLimitsRecord(record);
+                        endTagWrapper.addOffLimitsRecord(record, false);
                         this.unResumedRtuRecords.add(record);
                     }
                     break;

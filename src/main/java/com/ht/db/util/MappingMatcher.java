@@ -5,7 +5,6 @@ import java.util.Map;
 
 /**
  * 二维数组映射的匹配器
- * 
  */
 public class MappingMatcher implements Matcher {
 

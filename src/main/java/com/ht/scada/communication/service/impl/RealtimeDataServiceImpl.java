@@ -1,35 +1,45 @@
 package com.ht.scada.communication.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
+import com.ht.scada.communication.entity.FaultRecord;
+import com.ht.scada.communication.entity.OffLimitsRecord;
+import com.ht.scada.communication.entity.YxRecord;
 import com.ht.scada.communication.service.RealtimeDataService;
-import com.ht.scada.communication.util.VarGroup;
-import com.ht.scada.communication.util.VarSubType;
-import redis.clients.jedis.*;
-import redis.clients.util.Hashing;
-import redis.clients.util.Sharded;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.Pipeline;
 
 import javax.annotation.PreDestroy;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 /**
  * @author 薄成文
  *
  */
 public class RealtimeDataServiceImpl implements RealtimeDataService {
-	private ShardedJedisPool pool;
 
-    public RealtimeDataServiceImpl() {
-		JedisPoolConfig config =new JedisPoolConfig();//Jedis池配置
-		config.setMaxActive(20);// 最大活动的对象个数
-		config.setMaxIdle(1000 * 60);// 对象最大空闲时间
-		config.setMaxWait(1000 * 10);// 获取对象时最大等待时间
-		//config.setTestOnBorrow(true);
-	          
-//		pool = new JedisPool(config, "localhost");
-		
-		List<JedisShardInfo> jdsInfoList = new ArrayList<JedisShardInfo>(2);
+    /**
+     * 遥信变位广播通道名称
+     */
+    public static final String YX_CHANGE_CHANNEL = "YxChangeChannel";
+
+    /**
+     * "遥测越限发生"广播通道名称
+     */
+    public static final String OFF_LIMITS_CHANNEL = "OffLimitsChannel";
+
+    /**
+     * "故障报警"广播通道名称
+     */
+    public static final String FAULT_CHANNEL = "FaultChannel";
+
+    //private ShardedJedisPool pool;
+    private JedisPool pool;
+
+    public RealtimeDataServiceImpl(JedisPool pool) {
+        this.pool = pool;
+
+/*		List<JedisShardInfo> jdsInfoList = new ArrayList<JedisShardInfo>(2);
 
 		String hostA = "127.0.0.1";
 		int portA = 6379;
@@ -43,48 +53,16 @@ public class RealtimeDataServiceImpl implements RealtimeDataService {
 		// infoB.setPassword("redis.360buy");
 		//jdsInfoList.add(infoB);
 
-		pool = new ShardedJedisPool(config, jdsInfoList, Hashing.MURMUR_HASH,
-
-		Sharded.DEFAULT_KEY_TAG_PATTERN);
+		//pool = new ShardedJedisPool(config, jdsInfoList, Hashing.MURMUR_HASH, Sharded.DEFAULT_KEY_TAG_PATTERN);*/
 	}
 
     @Override
-    public String[] getBatchValue(String code, String[] name) {
-        ShardedJedis jedis = pool.getResource();
-
-        String[] value = new String[name.length];
+    public void putValus(Map<String, String> kvMap) {
+        Jedis jedis = pool.getResource();
         try {
-            ShardedJedisPipeline pipeline = jedis.pipelined();
-            Response<String>[] response = new Response[name.length];
-            for (int i = 0; i < name.length; i++) {
-                response[i] = pipeline.get(code + "/" + name[i]);
-            }
-            pipeline.sync();
-
-            for (int i = 0; i < name.length; i++) {
-                Response<String> resp = response[i];
-                String s = resp.get();
-                if ( s != null) {
-                    value[i] = s;
-                }
-            }
-        } finally {
-            pool.returnResource(jedis);
-        }
-        return value;
-    }
-
-    @Override
-    public void putBatchValue(Map<String, String> kvMap) {
-        ShardedJedis jedis = pool.getResource();
-        try {
-            ShardedJedisPipeline pipeline = jedis.pipelined();
-            int i = 0;
-            for (Entry<String, String> entry : kvMap.entrySet()) {
+            Pipeline pipeline = jedis.pipelined();
+            for (Map.Entry<String, String> entry : kvMap.entrySet()) {
                 pipeline.set(entry.getKey(), entry.getValue());
-                if (i++ % 100 == 0) {
-                    pipeline.sync();
-                }
             }
             pipeline.sync();
         } finally {
@@ -93,45 +71,63 @@ public class RealtimeDataServiceImpl implements RealtimeDataService {
     }
 
     @Override
-    public void putValue(String key, String value) {
-        ShardedJedis jedis = pool.getResource();
+    public void setEndModelGroupVar(String code, Map<String, String> groupVarMap) {
+        Jedis jedis = pool.getResource();
         try {
-            jedis.set(key, value);
+            jedis.hmset(code+":GROUP", groupVarMap);
         } finally {
             pool.returnResource(jedis);
         }
     }
 
     @Override
-    public String getValue(String key) {
-        ShardedJedis jedis = pool.getResource();
-        String value = null;
+    public void updateEndModel(String code, Map<String, String> kvMap) {
+        Jedis jedis = pool.getResource();
         try {
-            value = jedis.get(key);
+            String ret = jedis.hmset(code, kvMap);
+            System.out.println(ret);
         } finally {
             pool.returnResource(jedis);
         }
-        return value;
     }
 
     @Override
-    public Map<VarSubType, String> getEndTagVarGroupInfo(String code, VarGroup group) {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    public void updateEndModelYcArray(String code, Map<String, String> kvMap) {
+        updateEndModel(code+":ARRAY", kvMap);
     }
 
     @Override
-    public String getEndTagVarInfo(String code, VarGroup group, VarSubType varType) {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    public void faultOccured(FaultRecord record) {
+        publish(FAULT_CHANNEL, JSONObject.toJSONString(record));
     }
 
     @Override
-    public Map<String, String> getEndTagVarInfo(List<String> code, VarGroup group, VarSubType varType) {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    public void faultResumed(FaultRecord record) {
+        publish(FAULT_CHANNEL, JSONObject.toJSONString(record));
     }
 
     @Override
-    public Object[][] getEndTagVarLineData(String code, VarGroup group, VarSubType varType) {
-        return new Object[0][];  //To change body of implemented methods use File | Settings | File Templates.
+    public void offLimitsOccured(OffLimitsRecord record) {
+        publish(OFF_LIMITS_CHANNEL, JSONObject.toJSONString(record));
+    }
+
+    @Override
+    public void offLimitsResumed(OffLimitsRecord record) {
+        publish(OFF_LIMITS_CHANNEL, JSONObject.toJSONString(record));
+    }
+
+    @Override
+    public void yxChanged(YxRecord record) {
+        publish(YX_CHANGE_CHANNEL, JSONObject.toJSONString(record));
+    }
+
+    private void publish(String channel, String message) {
+        Jedis jedis = pool.getResource();
+        try {
+            jedis.publish(channel, message);
+        } finally {
+            pool.returnResource(jedis);
+        }
     }
 
     @PreDestroy

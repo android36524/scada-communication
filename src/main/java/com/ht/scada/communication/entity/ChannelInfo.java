@@ -92,8 +92,8 @@ public class ChannelInfo {
         return protocal;
     }
 
-    public void setProtocal(String protocal) {
-        this.protocal = CommunicationProtocal.valueOf(protocal);
+    public void setProtocal(CommunicationProtocal protocal) {
+        this.protocal = protocal;
     }
 
     public int getOffline() {

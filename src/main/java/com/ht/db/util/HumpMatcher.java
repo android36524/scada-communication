@@ -2,7 +2,6 @@ package com.ht.db.util;
 
 /**
  * 驼峰转换的匹配器
- * 
  */
 public class HumpMatcher implements Matcher {
 

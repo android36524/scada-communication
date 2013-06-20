@@ -1,19 +1,13 @@
 package com.ht.scada.communication;
 
-import com.ht.scada.communication.service.RealtimeDataService;
+import com.ht.scada.common.tag.util.VarGroupEnum;
 import com.ht.scada.communication.entity.ChannelInfo;
 import com.ht.scada.communication.model.*;
-import com.ht.scada.communication.service.DataService;
-import com.ht.scada.communication.util.VarGroup;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author 薄成文
@@ -23,9 +17,6 @@ public abstract class CommunicationChannel implements ICommChannel {
 
     public static final Logger log = LoggerFactory.getLogger(CommunicationChannel.class);
 
-	private DataService dataService;
-	private RealtimeDataService realtimeDataService;
-
 	protected final ChannelInfo channel;
 
 //	private List<EndTagWrapper> endTagList = Collections
@@ -33,20 +24,12 @@ public abstract class CommunicationChannel implements ICommChannel {
 	private final List<EndTagWrapper> endTagList;
 
 	/** 实时数据暂存队列 **/
-	protected Map<String, String> realtimeDataMap = new HashMap<>(256);
+	//protected Map<String, String> realtimeDataMap = new HashMap<>(256);
 
-    protected EventLoopGroup eventLoopGroup;
-
-    protected CommunicationChannel(EventLoopGroup eventLoopGroup, ChannelInfo channel, List<EndTagWrapper> endTagList) throws Exception {
-        this.dataService = CommunicationManager.getInstance().getDataService();
-        this.realtimeDataService = CommunicationManager.getInstance().getRealtimeDataService();
+    protected CommunicationChannel(ChannelInfo channel, List<EndTagWrapper> endTagList) throws Exception {
 
         this.channel = channel;
         this.endTagList = endTagList;
-        this.eventLoopGroup = eventLoopGroup;
-        if (this.eventLoopGroup == null) {
-            this.eventLoopGroup = new NioEventLoopGroup(1);
-        }
         if (endTagList == null || endTagList.isEmpty()) {
             log.warn("采集通道[{}]未关联监控对象, 请检查配置", channel.getName());
         } else {
@@ -63,10 +46,9 @@ public abstract class CommunicationChannel implements ICommChannel {
      * 更新实时数据
      */
 	protected void updateRealtimeData() {
-		if (!realtimeDataMap.isEmpty()) {
-			realtimeDataService.putBatchValue(realtimeDataMap);
-			realtimeDataMap.clear();
-		}
+        for (EndTagWrapper wrapper : endTagList) {
+            wrapper.updateRealtimeData();
+        }
 	}
 
 	/**
@@ -74,7 +56,7 @@ public abstract class CommunicationChannel implements ICommChannel {
 	 */
 	protected void persistHistoryData() {
 		for (EndTagWrapper model : endTagList) {// 遍历所有节点并进行处理
-            model.persistHistoryData(dataService);
+            model.persistHistoryData();
 		}
 	}
 
@@ -90,17 +72,25 @@ public abstract class CommunicationChannel implements ICommChannel {
 	 * @param varGroup
 	 * @param datetime 数据对应的日期时间
 	 */
-	protected void generateHistoryData(VarGroup varGroup, Date datetime) {
+	protected void generateHistoryData(VarGroupEnum varGroup, Date datetime) {
 		for (EndTagWrapper model : endTagList) {// 遍历所有末端
-            model.generateVarGroupHisData(varGroup, datetime, realtimeDataMap);
+            model.generateVarGroupHisData(varGroup, datetime);
 		}
 	}
+
+    public void forEachEndTag(EndTagHandler handler) {
+        for (EndTagWrapper model : endTagList) {// 遍历所有节点并进行处理
+            if (!handler.each(model)) {
+                break;
+            }
+        }
+    }
 	
     /**
      * 遍历采集设备（RTU）对应的末端的所有遥信变量
      * @param deviceAddr 设备地址过滤
      */
-    protected void forEachYxTagVar(int deviceAddr, DataHandler<YxTagVar> dataHandler) {
+    public void forEachYxTagVar(int deviceAddr, DataHandler<YxTagVar > dataHandler) {
         for (EndTagWrapper model : endTagList) {// 遍历所有节点并进行处理
             if (!isRunning()) {
                 return;
@@ -197,6 +187,9 @@ public abstract class CommunicationChannel implements ICommChannel {
         }
     }
 
+    public List<EndTagWrapper> getEndTagList() {
+        return endTagList;
+    }
 
 //	/*
 //	 * (non-Javadoc)
@@ -215,8 +208,8 @@ public abstract class CommunicationChannel implements ICommChannel {
 //			endTagList.add(model);
 //
 //			for (TagVar tagVar : model.varList) {// 遍历该节点下的所有变量，并进行处理
-//				if (tagVar.tpl.getVarType().equals(VarTypeConst.TYPE_YK)) {// 遥控
-//				} else if (tagVar.tpl.getVarType().equals(VarTypeConst.TYPE_YT)) {// 遥调
+//				if (tagVar.tpl.getType().equals(VarTypeConst.TYPE_YK)) {// 遥控
+//				} else if (tagVar.tpl.getType().equals(VarTypeConst.TYPE_YT)) {// 遥调
 //				}
 //			}
 //		}
@@ -246,6 +239,10 @@ public abstract class CommunicationChannel implements ICommChannel {
 	protected static interface DataHandler<T> {
 		boolean each(EndTagWrapper model, T var);
 	}
+
+    public static interface EndTagHandler {
+        boolean each(EndTagWrapper model);
+    }
 
 	/*
 	 * protected static interface NumDataHandler { double each(EndTagWrapper

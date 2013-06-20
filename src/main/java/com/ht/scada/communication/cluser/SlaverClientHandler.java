@@ -2,7 +2,7 @@ package com.ht.scada.communication.cluser;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundMessageHandlerAdapter;
-import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,11 +24,21 @@ public class SlaverClientHandler extends ChannelInboundMessageHandlerAdapter<Str
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        if (evt instanceof IdleState) {
-            IdleState e = (IdleState) evt;
-            if (e == IdleState.ALL_IDLE) {
-                log.info("通道空闲超时，即将关闭通道");
-                ctx.close();
+        if (evt instanceof IdleStateEvent) {
+            IdleStateEvent e = (IdleStateEvent) evt;
+            switch (e.state()) {
+                case ALL_IDLE:
+                    log.info("备机模式：主备机通讯通道长时间空闲，即将重新建立连接");
+                    ctx.close();
+                    break;
+                case READER_IDLE:
+                    log.info("备机模式：主备机通讯通道长时间没有接收,即将重新建立连接。");
+                    ctx.close();
+                    break;
+                case WRITER_IDLE:
+                    log.info("备机模式：主备机通讯通道长时间没有发送,即将重新建立连接。");
+                    ctx.close();
+                    break;
             }
         }
     }
@@ -45,24 +55,12 @@ public class SlaverClientHandler extends ChannelInboundMessageHandlerAdapter<Str
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        log.info("建立连接");
+        log.info("备机模式：已与主机建立连接");
         cb.onActive(ctx);
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        log.info("连接断开");
-        //cb.onUnregistered(ctx);
-    }
-
-    @Override
-    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-        log.info("channelRegistered");
-    }
-
-    @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
-        log.info("channelUnregistered");
         cb.onUnregistered(ctx);
     }
 }

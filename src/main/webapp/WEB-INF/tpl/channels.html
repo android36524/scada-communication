@@ -1,31 +1,35 @@
 <!DOCTYPE html>
 <html lang="zh" xmlns:th="http://www.thymeleaf.org">
 <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <title>采集通道</title>
-    <!--<script varType="text/javascript" src="/resources/js/jquery.tools.minValue.js"></script>-->
-    <script varType="text/javascript" src="/resources/js/jquip.events.minValue.js"></script>
-    <link href="/resources/css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../../resources/js/jquip.events.min.js" th:src="@{/resources/js/jquip.events.min.js}"></script>
+    <link th:href="@{/resources/css/style.css}" href="../../resources/css/style.css" rel="stylesheet"/>
 </head>
 <body>
 <div class="clear" id="nav">
     <ul>
         <li>
-            <a href="/">主页</a>
+            <a th:href="@{/}" href="index.html">主页</a>
         </li>
         <li class="active">
-            <a href="/main/channels">采集通道</a>
+            <a th:href="@{/channels}" href="channels.html">采集通道</a>
         </li>
     </ul>
 </div>
 <div style="margin: 10px 0;">
-    <input id="search" varType="text" width="100" /> <input id="searchBtn" varType="button" value="搜索" />
+    <div style="padding-bottom: 5px">
+        <input id="search" type="text" width="100" /> <input id="searchBtn" type="button" value="搜索" />
+    </div>
     <table class="dataintable">
         <thead>
             <tr>
                 <th id="nameSort">通道名称</th>
-                <th id="idxSort">序号</th>
+                <th id="idxSort" >序号</th>
                 <th>通讯规约</th>
                 <th>端口信息</th>
+                <th>数据监测</th>
+                <th>历史数据</th>
             </tr>
         </thead>
         <tbody id="tbContent">
@@ -34,10 +38,12 @@
             <td th:text="${channel.idx}"></td>
             <td th:text="${channel.protocal}"></td>
             <td th:text="${channel.portInfo}"></td>
+            <td><a href="endTag.html" th:href="@{/endTag(idx=${channel.idx})}" target="_blank">打开</a></td>
+            <td><a href="endTagHistory.html" th:href="@{/endTagHistory(idx=${channel.idx})}" target="_blank">打开</a></td>
         </tr>
         </tbody>
     </table>
-    <script varType="text/javascript">
+    <script type="text/javascript">
         $(function(){
             $("#searchBtn").click(function() {
                 var text = $("#search").val();

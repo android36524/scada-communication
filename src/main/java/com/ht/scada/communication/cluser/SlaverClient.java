@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 public class SlaverClient implements IService {
 
     private final Logger log = LoggerFactory.getLogger(SlaverClient.class);
+    private final int heartBeatInterval = 5;
     private final int reConnectInterval = 5;
     private final int idleTime = 20;
     private final String host;
@@ -72,7 +73,7 @@ public class SlaverClient implements IService {
         if (!running) {
             return;
         }
-        log.info("请求与主机建立连接");
+        log.info("备机模式：请求与主机建立连接");
         bootstrap = new Bootstrap().group(new NioEventLoopGroup(2))
                 .channel(NioSocketChannel.class)
                 .option(ChannelOption.TCP_NODELAY, true)
@@ -94,7 +95,7 @@ public class SlaverClient implements IService {
                                         if (communicationController != null) {
                                             communicationController.stopAllChannel();
                                         }
-                                        timer = ctx.executor().scheduleAtFixedRate(new HeartBeatTask(ctx), 0, 2, TimeUnit.SECONDS);
+                                        timer = ctx.executor().scheduleAtFixedRate(new HeartBeatTask(ctx), 0, heartBeatInterval, TimeUnit.SECONDS);
                                     }
 
                                     @Override
@@ -103,8 +104,8 @@ public class SlaverClient implements IService {
                                             timer.cancel(false);
                                             timer = null;
                                         }
-                                        // 2秒后重连
-                                        log.info("连接断开，{}秒后重连.", reConnectInterval);
+                                        // 5秒后重连
+                                        log.info("备机模式：未连接到主机建立，{}秒后重连.", reConnectInterval);
                                         ctx.executor().schedule(new Runnable() {
                                             @Override
                                             public void run() {
@@ -132,7 +133,7 @@ public class SlaverClient implements IService {
 
     @Override
     public void stop() {
-        log.info("停止与主机之间的连接");
+        log.info("备机模式：断开与主机之间的连接");
         running = false;
         if (channel != null) {
             channel.close();

@@ -1,11 +1,17 @@
 package com.ht.scada.communication.iec104;
 
+import com.ht.scada.communication.Config;
 import com.ht.scada.communication.entity.ChannelInfo;
+import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class IEC104ChannelTest {
+    @Test
+    public void test() {
+        Config.INSTANCE.getMode();
+    }
 
 //  @Test
   public void execute() throws Exception {
@@ -17,7 +23,7 @@ public class IEC104ChannelTest {
 	  List<IEC104Channel> channelList = new ArrayList<>();
 	  long start = System.currentTimeMillis();
 	  for (int i = 0; i < 100; i++) {
-		  IEC104Channel commChannel = new IEC104Channel(null, channel, null);
+		  IEC104Channel commChannel = new IEC104Channel(channel, null);
 		  channelList.add(commChannel);
 		  commChannel.start();
 //	  Thread.sleep(100);

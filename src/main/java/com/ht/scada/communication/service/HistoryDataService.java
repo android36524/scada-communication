@@ -25,10 +25,21 @@ public interface HistoryDataService {
      * @param varGroup 变量分组
      * @param start 起始时间
      * @param end 结束时间
-     * @param limit 返回的最大数量; 当limit<=0或limit>5000时最多返回5000项历史记录; 当limit>0&&limit<=5000时,最多返回limit项历史记录.
+     * @param skip 用于分页查询
+     * @param limit 返回的最大数量用于分页查询
      * @return
      */
-    List<VarGroupData> getVarGroupData(String code, VarGroupEnum varGroup, Date start, Date end, int limit);
+    List<VarGroupData> getVarGroupData(String code, VarGroupEnum varGroup, Date start, Date end, int skip, int limit);
+
+    /**
+     * 查询某监控对象在指定时间范围内的记录总数，用于分页查询
+     * @param code
+     * @param varGroup
+     * @param start
+     * @param end
+     * @return
+     */
+    long getVarGroupDataCount(String code, VarGroupEnum varGroup, Date start, Date end);
 
     /**
      * 查询该时间点最新的一条数据记录

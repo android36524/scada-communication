@@ -53,6 +53,7 @@ public class GTVGApplication {
         controllersByURL.put("/main/edit", new EditController());
         controllersByURL.put("/channels", new ChannelController());
         controllersByURL.put("/endTag", new EndModelController());
+        controllersByURL.put("/endTagHistory", new EndModelHistoryController());
 //        controllersByURL.put("/product/list", new ProductListController());
 //        controllersByURL.put("/product/comments", new ProductCommentsController());
 //        controllersByURL.put("/order/list", new OrderListController());

@@ -1,15 +1,15 @@
 package com.ht.scada.communication.model;
 
+import com.google.common.base.Joiner;
+import com.ht.scada.common.tag.util.DataType;
 import com.ht.scada.common.tag.util.VarGroupEnum;
 import com.ht.scada.common.tag.util.VarSubTypeEnum;
 import com.ht.scada.common.tag.util.VarTypeEnum;
 import com.ht.scada.communication.DataBaseManager;
 import com.ht.scada.communication.data.kv.VarGroupData;
-import com.ht.scada.communication.entity.YxRecord;
 import com.ht.scada.communication.entity.*;
 import com.ht.scada.communication.service.HistoryDataService;
 import com.ht.scada.communication.service.RealtimeDataService;
-import com.ht.scada.common.tag.util.DataType;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
@@ -128,6 +128,9 @@ public class EndTagWrapper {
                     if (tplWrapper.getTagVarTpl().getDataType() == DataType.INT16_ARRAY) {//遥测数组
                         YcTagVar tagVar = createYcTagVar(ioInfoList, tplWrapper);
                         ycVarList.add(tagVar);
+                        if (varGroupWrapper != null) {
+                            varGroupWrapper.getYcVarList().add(tagVar);
+                        }
                     }
                     qtVarList.add(new TagVar(this, tplWrapper.getTagVarTpl()));
                     break;
@@ -157,6 +160,7 @@ public class EndTagWrapper {
                     }
                 }
                 groupVarMap.put(varGroup.toString(), StringUtils.join(list, ","));
+                realtimeDataService.setEndModelGroupVar(endTag.getCode(), groupVarMap);
             }
         }
         for (VarGroupEnum varGroup : varGroupToRemove) {
@@ -346,8 +350,14 @@ public class EndTagWrapper {
                     data.getYcValueMap().put( var.getTpl().getVarName(), var.getLastYcValue());
                 } else if (var.getLastArrayValue() != null) {
                     // TODO: 示功图数据打包完成后加入实时数据更新列表
-                    realtimeYcArrayDataMap.put(var.getTpl().getVarName(), StringUtils.join(Arrays.asList(var.getLastArrayValue()), ","));
-                    data.getArrayValueMap().put( var.getTpl().getVarName(), var.getLastArrayValue());
+                    List<String> list = new ArrayList<>(var.getLastArrayValue().length);
+                    for (int i = 0; i < var.getLastArrayValue().length; i++) {
+                        float v = var.getLastArrayValue()[i];
+                        list.add(Float.toString(v));
+                    }
+                    System.out.println(list);
+                    realtimeYcArrayDataMap.put(var.getTpl().getVarName(), Joiner.on(',').join(list));
+                    data.getArrayValueMap().put(var.getTpl().getVarName(), var.getLastArrayValue());
                 }
             }
 

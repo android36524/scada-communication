@@ -32,15 +32,12 @@ public class Test {
 	public static void main(String[] args) throws InterruptedException, IOException {
         //dbCreateData();
         //historyServiceTest();
-        DataBaseManager.getInstance().init();
+        //realTimeServiceTest();
 
+        System.out.println(LocalDate.parse("1922-6-12").getMonthOfYear());
+        System.out.println(LocalDate.parse("1922-06-12").getMonthOfYear());
 
-        Map<String, String> varGroupMap = Maps.newHashMap(ImmutableMap.<String, String>of(VarGroupEnum.DIAN_YC.toString(), "i_a,i_b,i_c,test", VarGroupEnum.DIAN_YM.toString(), "numberText"));
-        DataBaseManager.getInstance().getRealtimeDataService().setEndModelGroupVar("codeTest", varGroupMap);
-
-        Map<String, String> varValueMap = Maps.newHashMap(ImmutableMap.<String, String>of("test", "true", "numberText", "123"));
-        System.out.println(varValueMap);
-        DataBaseManager.getInstance().getRealtimeDataService().updateEndModel("codeTest", varValueMap);
+        //DataBaseManager.getInstance().getRealtimeDataService().
 
 //        TagVarTplDao dao = new TagVarTplDaoImpl();
 //        List<TagVarTpl> list = dao.getAll ();
@@ -55,6 +52,17 @@ public class Test {
 //        }
 
         //redisTest();
+    }
+
+    private static void realTimeServiceTest() {
+        DataBaseManager.getInstance().init();
+
+        Map<String, String> varGroupMap = Maps.newHashMap(ImmutableMap.<String, String>of(VarGroupEnum.DIAN_YC.toString(), "i_a,i_b,i_c,test", VarGroupEnum.DIAN_YM.toString(), "numberText"));
+        DataBaseManager.getInstance().getRealtimeDataService().setEndModelGroupVar("codeTest", varGroupMap);
+
+        Map<String, String> varValueMap = Maps.newHashMap(ImmutableMap.<String, String>of("test", "true", "numberText", "123"));
+        System.out.println(varValueMap);
+        DataBaseManager.getInstance().getRealtimeDataService().updateEndModel("codeTest", varValueMap);
     }
 
     private static void historyServiceTest() {

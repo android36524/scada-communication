@@ -20,6 +20,11 @@ public interface RealtimeDataService {
 
     void putValus(Map<String, String> kvMap);
 
+    /**
+     * 将末端分组变量写入实时数据库(只包括遥信、遥测、遥控变量,不包括遥测数据)
+     * @param code
+     * @param groupVarMap
+     */
     void setEndModelGroupVar(String code, Map<String, String> groupVarMap);
 
     /**

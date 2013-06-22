@@ -6,6 +6,23 @@
     <script type="text/javascript" src="../../resources/js/jquery.tools.min.js" th:src="@{/resources/js/jquery.tools.min.js}"></script>
     <link href="../../resources/css/jquery.tools.css" th:href="@{/resources/css/jquery.tools.css}"  rel="stylesheet"/>
     <link href="../../resources/css/style.css" th:href="@{/resources/css/style.css}"  rel="stylesheet"/>
+    <script type="text/javascript">
+        $(function(){
+            $.tools.dateinput.localize("zh",  {
+                months:        '一月,二月,三月,四月,五月,六月,七月,八月,九月,十月,十一月,十二月',
+                shortMonths:   '1,2,3,4,5,6,7,8,9,10,11,12',
+                days:          '星期一,星期二,星期三,星期四,星期五,星期六,星期日',
+                shortDays:     '一,二,三,四,五,六,日'
+            });
+            $("#datePicker").dateinput({
+                lang: 'zh',
+                format: 'yyyy-m-dd'
+            });
+//            $("#query").click(function(){
+//
+//            });
+        });
+    </script>
 </head>
 <body>
 <div class="clear" id="nav">
@@ -19,69 +36,33 @@
     </ul>
 </div>
 <div style="margin: 10px 0;">
-    <div th:text="${endTagWrapper.endTag.name}">监控对象名称</div>
     <!--<select id="mode" name="mode" onchange="modeChanged()">-->
         <!--<option th:each="endTagWrapper : commChannel.endTagList" th:value="${endTagWrapper.endTag.name}"-->
                 <!--th:text="${endTagWrapper.endTag.name}" selected="selected">1#油井</option>-->
     <!--</select>-->
+    <form action="endTagHistory" th:action="@{/endTagHistory}" method="post">
     <div>
-        <a href="#" target="_blank"
-                th:href="@{/gt(channelIdx=${channelIdx},code=${endCode},type='sgt',width=500,height=500)}">示功图</a>
-        <a href="#" th:href="@{/gt(channelIdx=${channelIdx},code=${endCode},type='dlt',width=500,height=500)}" target="_blank">电流图</a>
-        <a href="#" th:href="@{/gt(channelIdx=${channelIdx},code=${endCode},type='glt',width=500,height=500)}" target="_blank">功率图</a>
+            <span th:text="${endTagWrapper.endTag.name}">监控对象名称</span>
+            <select name="varGroup">
+                <option th:each="varGroup : ${groupList}" th:value="${varGroup.varGroupInfo.name}" th:text="${varGroup.varGroupInfo.value}"></option>
+            </select>
+            <input type="hidden" name="idx" th:value="${idx}" />
+            <input name="date" id="datePicker" type="text" />
+            <input id="query" type="submit" value="查询" />
     </div>
 
-    <div id="content">
-        <ul class="css-tabs">
-            <!--<li th:each="varGroup : ${endTagWrapper.varGroupWrapperMap}"><a href="#" th:text="${varGroup.key.value}">变量分组名称</a></li>-->
-            <li th:each="varGroup : ${groupList}"><a href="#" th:text="${varGroup.varGroupInfo.value}">变量分组名称</a></li>
-        </ul>
-
-        <!-- tab "panes" -->
-        <div class="css-panes">
-            <div name="tab" th:each="varGroup : ${groupList}">
-            <!--<div name="tab" th:each="varGroup : ${endTagWrapper.varGroupWrapperMap}">-->
-                <!-- 				<button id="edit-yx">更新信息表</button> -->
-                <table class="dataintable" th:if="${not #lists.isEmpty(varGroup.yxVarList)}" style="float: left; margin-right: 5px;">
-                    <tr>
-                        <th>遥信</th> <th>状态</th>
-                    </tr>
-                    <tr th:each="yxVar : ${varGroup.yxVarList}">
-                        <td th:text="${yxVar.tpl.tagName}">变量名</td>
-                        <td th:text="${yxVar.lastYxValue}">0</td>
-                    </tr>
-                </table>
-                <table class="dataintable" th:if="${not #lists.isEmpty(varGroup.ycVarList)}" style="float: left; margin-right: 5px;">
-                    <tr>
-                        <th>遥测</th> <th>变量值</th>
-                    </tr>
-                    <tr th:each="ycVar : ${varGroup.ycVarList}">
-                        <td th:text="${ycVar.tpl.tagName}">变量名</td>
-                        <td th:text="${ycVar.lastYcValue}"
-                            th:if="${#objects.nullSafe(ycVar.lastYcValue,#{false})}">240</td>
-                        <!--<td th:text="${#numbers.arrayFormatDecimal(ycVar.lastArrayValue, 3, 2)}"-->
-                            <!--th:if="${#objects.nullSafe(ycVar.lastArrayValue, #{false})}">23,324,324,23</td>-->
-                    </tr>
-                </table>
-                <table class="dataintable" th:if="${not #lists.isEmpty(varGroup.ymVarList)}" style="float: left;">
-                    <tr>
-                        <th>遥脉</th> <th>变量值</th>
-                    </tr>
-                    <tr th:each="ymVar : ${varGroup.ymVarList}">
-                        <td th:text="${ymVar.tpl.tagName}">变量名</td>
-                        <td th:text="${ymVar.lastYmValue}">111111</td>
-                    </tr>
-                </table>
-                <br style="clear: both;" />
-            </div>
-        </div>
+    <div>
+        <table class="dataintable" th:if="${not #lists.isEmpty(dataList)}">
+            <tr>
+                <th>遥脉</th> <th>变量值</th>
+            </tr>
+            <tr th:each="data : ${dataList}">
+                <td th:text="${data.code}">变量名</td>
+                <td th:text="${data.datetime}">111111</td>
+            </tr>
+        </table>
     </div>
-
-    <script type="text/javascript">
-        $(function(){
-            $(".css-tabs:first").tabs(".css-panes:first > div");
-        });
-    </script>
+    </form>
 </div>
 </body>
 </html>

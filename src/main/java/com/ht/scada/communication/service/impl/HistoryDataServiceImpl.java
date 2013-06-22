@@ -121,13 +121,7 @@ public class HistoryDataServiceImpl implements HistoryDataService {
     }
 
     @Override
-    public List<VarGroupData> getVarGroupData(String code, VarGroupEnum varGroup, Date start, Date end, int limit) {
-        List<VarGroupData> list = new ArrayList<>();
-
-        if (limit <= 0 || limit > 5000) {
-            limit = 5000;
-        }
-
+    public long getVarGroupDataCount(String code, VarGroupEnum varGroup, Date start, Date end) {
         String startTimestamp = LocalDateTime.fromDateFields(start).toString();
         String endTimestamp = LocalDateTime.fromDateFields(end).toString();
 
@@ -136,23 +130,31 @@ public class HistoryDataServiceImpl implements HistoryDataService {
 
         Key parentKey = KeyDefinition.getVarGroupKey(code, varGroup.toString());
         Iterator<Key> keyIterator = store.multiGetKeysIterator(Direction.FORWARD, 0, parentKey, keyRange, Depth.CHILDREN_ONLY);
-        int count = 0;
+        long count = 0;
         while (keyIterator.hasNext()) {
-            Key next = keyIterator.next();
+            keyIterator.next();
             count++;
         }
+        return count;  //To change body of implemented methods use File | Settings | File Templates.
+    }
 
-        int skip = 0;
-        if (count > limit) {
-            skip = count / count % limit;
-        }
+    @Override
+    public List<VarGroupData> getVarGroupData(String code, VarGroupEnum varGroup, Date start, Date end, int skip, int limit) {
+        List<VarGroupData> list = new ArrayList<>();
 
-        Iterator<KeyValueVersion> keyValueVersionIterator = store.multiGetIterator(Direction.FORWARD, 0, KeyDefinition.getVarGroupKey(code, varGroup.toString()), keyRange, Depth.CHILDREN_ONLY);
-        //final Map<Key, ValueVersion> results = store.multiGetIterator(Direction.FORWARD, KeyDefinition.getVarGroupKey(code, varGroup.toString()), keyRange, Depth.CHILDREN_ONLY);
-        int i = 1;
+        String startTimestamp = LocalDateTime.fromDateFields(start).toString();
+        String endTimestamp = LocalDateTime.fromDateFields(end).toString();
+
+        KeyRange keyRange = new KeyRange(startTimestamp /*start*/, true /*startInclusive*/,
+                endTimestamp /*end*/, false /*endInclusive*/);
+
+        Key parentKey = KeyDefinition.getVarGroupKey(code, varGroup.toString());
+
+        Iterator<KeyValueVersion> keyValueVersionIterator = store.multiGetIterator(Direction.FORWARD, 0, parentKey, keyRange, Depth.CHILDREN_ONLY);
+        int i = 0;
         while (keyValueVersionIterator.hasNext()) {
             KeyValueVersion keyValueVersion = keyValueVersionIterator.next();
-            if (skip == 0 || i % skip != 0) {
+            if (i >= skip) {
                 VarGroupData data = new VarGroupData();
                 data.parseKey(keyValueVersion.getKey());
                 data.parseValue(keyValueVersion.getValue());

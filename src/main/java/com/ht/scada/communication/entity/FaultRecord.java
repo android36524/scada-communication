@@ -20,19 +20,21 @@ public class FaultRecord {
 	private String info;// 故障信息
 	private Boolean value;
     @Column(name = "action_time")
+    @Temporal(TemporalType.TIMESTAMP)
 	private Date actionTime;
     @Column(name = "resume_time")
+    @Temporal(TemporalType.TIMESTAMP)
 	private Date resumeTime;
 
     @Transient
     private boolean persisted;// 是否已经写入数据库
 
 	public FaultRecord() {
-        this.id = UUID.randomUUID().toString();
+        this.id = UUID.randomUUID().toString().replace("-", "");
 	}
 	
 	public FaultRecord(String code, String name, String info, boolean value, Date actionTime) {
-        this.id = UUID.randomUUID().toString();
+        this.id = UUID.randomUUID().toString().replace("-", "");
 		this.code = code;
 		this.name = name;
 		this.info = info;

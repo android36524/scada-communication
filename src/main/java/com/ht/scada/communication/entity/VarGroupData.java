@@ -1,6 +1,7 @@
-package com.ht.scada.communication.data.kv;
+package com.ht.scada.communication.entity;
 
 import com.ht.scada.common.tag.util.VarGroupEnum;
+import com.ht.scada.communication.data.kv.IKVRecord;
 import oracle.kv.Key;
 import oracle.kv.Value;
 import org.joda.time.LocalDateTime;
@@ -10,8 +11,8 @@ import java.util.*;
 import java.util.Map.Entry;
 
 /**
- * 数据分组记录，存入nosql数据库<br/>
- * 相同的变量分组一起打包保存，保存时采用snappy进行压缩
+ * 数据分组记录，存入历史数据库<br/>
+ * 按变量分组进行保存
  * @author 薄成文
  * 
  */
@@ -22,9 +23,21 @@ public class VarGroupData implements IKVRecord {
 	private String code;// 计量点编号(回路号、井号等)
 	private VarGroupEnum group;// 变量分组
 
+    /**
+     * 遥测变量map, key为变量的varName
+     */
 	private Map<String, Float> ycValueMap = new HashMap<>();
+    /**
+     * 遥脉变量map, key为变量的varName
+     */
 	private Map<String, Double> ymValueMap = new HashMap<>();
+    /**
+     * 遥信变量map, key为变量的varName
+     */
 	private Map<String, Boolean> yxValueMap = new HashMap<>();
+    /**
+     * 遥信数组变量map, key为变量的varName
+     */
 	private Map<String, float[]> arrayValueMap = new HashMap<>();// 数组包
 
 	private Date datetime;

@@ -55,12 +55,25 @@
                     <tr>
                         <th>遥测</th> <th>变量值</th>
                     </tr>
-                    <tr th:each="ycVar : ${varGroup.ycVarList}">
+                    <tr th:each="ycVar : ${varGroup.ycVarList}" th:if="${not ycVar.lastArrayValue}">
                         <td th:text="${ycVar.tpl.tagName}">变量名</td>
-                        <td th:text="${ycVar.lastYcValue}"
-                            th:if="${#objects.nullSafe(ycVar.lastYcValue,#{false})}">240</td>
+                        <td th:text="${ycVar.lastYcValue}">240</td>
                         <!--<td th:text="${#numbers.arrayFormatDecimal(ycVar.lastArrayValue, 3, 2)}"-->
                             <!--th:if="${#objects.nullSafe(ycVar.lastArrayValue, #{false})}">23,324,324,23</td>-->
+                    </tr>
+                    <tr th:each="ycVar : ${varGroup.ycVarList}" th:if="${ycVar.lastArrayValue}">
+                        <td th:text="${ycVar.tpl.tagName}">变量名</td>
+                        <td>
+                            <span name="tooltip">查看遥测数组</span>
+                            <span class="tooltip">
+                                    <span th:each="ycArrayItem : ${ycVar.lastArrayValue}"
+                                          th:text="${#numbers.formatDecimal(ycArrayItem, 3, 2)}"
+                                          style="float: left; padding: 2px;">
+                                        123.45
+                                    </span>
+                                    <br style="clear: both;" />
+                            </span>
+                        </td>
                     </tr>
                 </table>
                 <table class="dataintable" th:if="${not #lists.isEmpty(varGroup.ymVarList)}" style="float: left;">
@@ -80,6 +93,7 @@
     <script type="text/javascript">
         $(function(){
             $(".css-tabs:first").tabs(".css-panes:first > div");
+            $("span[name='tooltip']").tooltip();
         });
     </script>
 </div>

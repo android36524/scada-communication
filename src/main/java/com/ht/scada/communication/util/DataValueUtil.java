@@ -2,6 +2,10 @@ package com.ht.scada.communication.util;
 
 public class DataValueUtil {
 
+    public static boolean parseBoolValue(int data, int bitOffset) {
+        return (data & (1 << bitOffset)) > 0;
+    }
+
 	public static boolean parseBoolValue(byte[] data, int byteOffset, int bitOffset) {
 		return (data[byteOffset] & (1 << bitOffset)) > 0;
 	}

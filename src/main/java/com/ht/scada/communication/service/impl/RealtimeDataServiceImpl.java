@@ -1,5 +1,6 @@
 package com.ht.scada.communication.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.ht.scada.communication.entity.FaultRecord;
 import com.ht.scada.communication.entity.OffLimitsRecord;
@@ -84,8 +85,7 @@ public class RealtimeDataServiceImpl implements RealtimeDataService {
     public void updateEndModel(String code, Map<String, String> kvMap) {
         Jedis jedis = pool.getResource();
         try {
-            String ret = jedis.hmset(code, kvMap);
-            System.out.println(ret);
+            jedis.hmset(code, kvMap);
         } finally {
             pool.returnResource(jedis);
         }
@@ -98,7 +98,7 @@ public class RealtimeDataServiceImpl implements RealtimeDataService {
 
     @Override
     public void faultOccured(FaultRecord record) {
-        publish(FAULT_CHANNEL, JSONObject.toJSONString(record));
+        publish(FAULT_CHANNEL, JSON.toJSONString(record));
     }
 
     @Override

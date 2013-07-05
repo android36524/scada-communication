@@ -6,7 +6,7 @@ import com.ht.scada.common.tag.util.VarGroupEnum;
 import com.ht.scada.common.tag.util.VarSubTypeEnum;
 import com.ht.scada.common.tag.util.VarTypeEnum;
 import com.ht.scada.communication.DataBaseManager;
-import com.ht.scada.communication.data.kv.VarGroupData;
+import com.ht.scada.communication.entity.VarGroupData;
 import com.ht.scada.communication.entity.*;
 import com.ht.scada.communication.service.HistoryDataService;
 import com.ht.scada.communication.service.RealtimeDataService;
@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 public class EndTagWrapper {
-    public static final Logger log = LoggerFactory.getLogger(EndTagWrapper.class);
+    private static final Logger log = LoggerFactory.getLogger(EndTagWrapper.class);
 
     private HistoryDataService historyDataService;
     private RealtimeDataService realtimeDataService;
@@ -58,6 +58,10 @@ public class EndTagWrapper {
     private final List<YcTagVar> ycVarList = new ArrayList<>();
     private final List<YmTagVar> ymVarList = new ArrayList<>();
     private final List<YxTagVar> yxVarList = new ArrayList<>();
+    /**
+     * 遥测转遥信列表，该列表中的变量包含在yxVarList中
+     */
+    private final List<YxTagVar> yc2YxVarList = new ArrayList<>();
 
     private final List<TagVar> qtVarList = new ArrayList<>();
     private final List<TagVar> ykVarList = new ArrayList<>();
@@ -83,7 +87,9 @@ public class EndTagWrapper {
 			//varList.add(tagVar);
             VarGroupWrapper varGroupWrapper = varGroupWrapperMap.get(tplWrapper.getTagVarTpl().getVarGroup());
             if (varGroupWrapper == null) {
-                throw new RuntimeException("未找到变量分组" + tplWrapper.getTagVarTpl().getVarGroup() + "的配置信息");
+                String msg = "未找到变量分组" + tplWrapper.getTagVarTpl().getVarGroup() + "的配置信息";
+                log.error(msg);
+                throw new RuntimeException(msg);
             }
 
             switch (tplWrapper.getTagVarTpl().getVarType()) {
@@ -97,6 +103,10 @@ public class EndTagWrapper {
                     if (tplWrapper.getTagVarTpl().getSubType() == VarSubTypeEnum.RTU_RJ45_STATUS) {
                         // 网络通讯状态
                         rtuStatusVar = yxTagVar;
+                    }
+                    DataType dataType = tplWrapper.getTagVarTpl().getDataType();
+                    if (dataType == DataType.INT16 || dataType == DataType.INT32) {// 遥测转遥信
+                        this.yc2YxVarList.add(yxTagVar);
                     }
                     break;
                 }
@@ -202,6 +212,10 @@ public class EndTagWrapper {
 
     public List<YxTagVar> getYxVarList() {
         return yxVarList;
+    }
+
+    public List<YxTagVar> getYc2YxVarList() {
+        return yc2YxVarList;
     }
 
     public List<YcTagVar> getYcVarList() {
@@ -332,8 +346,11 @@ public class EndTagWrapper {
             return;
         }
 
+        assert datetime != null;
+
         int interval = wrapper.getVarGroupInfo().getIntvl();
-        int minute = LocalDateTime.fromDateFields(datetime).getMinuteOfHour() / interval * interval;
+        int minute = interval <= 0 ? -1 : LocalDateTime.fromDateFields(datetime).getMinuteOfHour() / interval * interval;
+        //log.debug("{}-{}-{}", wrapper.getVarGroupInfo().getName().getValue(), interval, minute);
         if (interval <= 0 || (wrapper.getLastMinute() != minute)) {
             log.debug("生成分组历史数据:{}-{}", endTag.getName(), varGroup.getValue());
             wrapper.setLastMinute(minute);
@@ -355,7 +372,6 @@ public class EndTagWrapper {
                         float v = var.getLastArrayValue()[i];
                         list.add(Float.toString(v));
                     }
-                    System.out.println(list);
                     realtimeYcArrayDataMap.put(var.getTpl().getVarName(), Joiner.on(',').join(list));
                     data.getArrayValueMap().put(var.getTpl().getVarName(), var.getLastArrayValue());
                 }

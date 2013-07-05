@@ -27,21 +27,23 @@ public class OffLimitsRecord {
 	private double threshold;// 阈值
 	private Boolean type;// 越限类型 true:越上限，false:越下限
     @Column(name = "action_time")
+    @Temporal(TemporalType.TIMESTAMP)
 	private Date actionTime;
 
     @Column(name = "resume_time", insertable = false)
+    @Temporal(TemporalType.TIMESTAMP)
 	private Date resumeTime;
 
     @Transient
     private boolean persisted;// 是否已经写入数据库
 
 	public OffLimitsRecord() {
-        this.id = UUID.randomUUID().toString();
+        this.id = UUID.randomUUID().toString().replace("-", "");
 	}
 
 	public OffLimitsRecord(String code, String name, String info, double value,
 			double threshold, boolean type, Date actionTime) {
-        this.id = UUID.randomUUID().toString();
+        this.id = UUID.randomUUID().toString().replace("-", "");
 		this.code = code;
 		this.name = name;
 		this.info = info;

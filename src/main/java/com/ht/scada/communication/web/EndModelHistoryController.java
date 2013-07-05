@@ -4,7 +4,7 @@ import com.ht.scada.common.tag.util.VarGroupEnum;
 import com.ht.scada.communication.CommunicationChannel;
 import com.ht.scada.communication.CommunicationManager;
 import com.ht.scada.communication.DataBaseManager;
-import com.ht.scada.communication.data.kv.VarGroupData;
+import com.ht.scada.communication.entity.VarGroupData;
 import com.ht.scada.communication.model.EndTagWrapper;
 import com.ht.scada.communication.model.VarGroupWrapper;
 import org.joda.time.LocalDate;
@@ -27,12 +27,15 @@ public class EndModelHistoryController implements IGTVGController {
             final ServletContext servletContext, final TemplateEngine templateEngine)
             throws Exception {
         String idxStr = request.getParameter("idx");
+        if (idxStr == null) {
+            idxStr = "0";
+        }
         int idx = Integer.parseInt(idxStr);
         CommunicationChannel communicationChannel = CommunicationManager.getInstance().getChannelMap().get(idx);
         EndTagWrapper endTagWrapper = communicationChannel.getEndTagList().get(0);
 
         WebContext ctx = new WebContext(request, response, servletContext, request.getLocale());
-        ctx.setVariable("today", Calendar.getInstance());
+        ctx.setVariable("date", new Date());
 
         //log.debug("显示采集通道");
         ctx.setVariable("channelIdx", idxStr);
@@ -48,13 +51,19 @@ public class EndModelHistoryController implements IGTVGController {
         });
         ctx.setVariable("groupList", groupList);
         ctx.setVariable("idx", idx);
-
+        for (VarGroupWrapper varGroupWrapper : endTagWrapper.getVarGroupWrapperMap().values()) {
+            ctx.setVariable("varGroupWrapper", varGroupWrapper);
+            break;
+        }
 
         String dateInput = request.getParameter("date");
         String varGroup = request.getParameter("varGroup");
         if (dateInput != null && varGroup != null) {
             VarGroupEnum varGroupEnum = VarGroupEnum.valueOf(varGroup);
             LocalDate localDate = LocalDate.parse(dateInput);
+
+            VarGroupWrapper varGroupWrapper = endTagWrapper.getVarGroupWrapperMap().get(varGroupEnum);
+            ctx.setVariable("varGroupWrapper", varGroupWrapper);
 
             long count = DataBaseManager.getInstance().getHistoryDataService()
                     .getVarGroupDataCount(endTagWrapper.getEndTag().getCode(), varGroupEnum,
@@ -78,6 +87,7 @@ public class EndModelHistoryController implements IGTVGController {
                 ctx.setVariable("pageCount", count / pageSize + 1);
             }
             ctx.setVariable("dataList", list);
+            ctx.setVariable("date", localDate.toDate());
         }
 
         templateEngine.process("endTagHistory", ctx, response.getWriter());

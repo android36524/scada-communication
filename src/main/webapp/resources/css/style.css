@@ -84,3 +84,14 @@ table.dataintable td {
     background-color: #ffff00;
     padding: 2px 5px;
 }
+
+/* tooltip styling. by default the element to be styled is .tooltip  */
+.tooltip {
+    display:none;
+    background:url(./img/tooltip/black_arrow_big.png);
+    height:163px;
+    padding:40px 30px 10px 30px;
+    width:310px;
+    font-size:11px;
+    color:#fff;
+}

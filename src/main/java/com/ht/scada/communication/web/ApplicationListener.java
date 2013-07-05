@@ -5,7 +5,6 @@ package com.ht.scada.communication.web; /**
  */
 
 import com.ht.scada.communication.CommunicationManager;
-import com.ht.scada.communication.Config;
 import com.ht.scada.communication.DataBaseManager;
 import com.ht.scada.communication.cluser.CluserController;
 import org.slf4j.Logger;
@@ -32,7 +31,7 @@ public class ApplicationListener implements ServletContextListener,
     public void contextInitialized(ServletContextEvent sce) {
         log.info("初始化参数配置");
         //必须先初始化参数配置
-        Config.INSTANCE.init(sce.getServletContext().getRealPath("/WEB-INF/config.properties"));
+        //Config.INSTANCE.init(sce.getServletContext().getRealPath("/WEB-INF/config.properties"));
         DataBaseManager.getInstance().init();
 
         // 启动通讯采集服务

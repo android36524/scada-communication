@@ -20,7 +20,6 @@ public class EditController implements IGTVGController {
             final HttpServletRequest request, final HttpServletResponse response,
             final ServletContext servletContext, final TemplateEngine templateEngine)
             throws Exception {
-        System.out.println(request.getMethod());
         if (request.getMethod().equals("GET")) {
             WebContext ctx = new WebContext(request, response, servletContext, request.getLocale());
             ctx.setVariable("today", Calendar.getInstance());

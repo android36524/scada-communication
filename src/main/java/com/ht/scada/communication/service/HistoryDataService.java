@@ -3,7 +3,7 @@ package com.ht.scada.communication.service;
 import com.ht.scada.common.tag.util.VarGroupEnum;
 import com.ht.scada.communication.entity.FaultRecord;
 import com.ht.scada.communication.entity.OffLimitsRecord;
-import com.ht.scada.communication.data.kv.VarGroupData;
+import com.ht.scada.communication.entity.VarGroupData;
 import com.ht.scada.communication.entity.YxRecord;
 
 import java.util.Date;

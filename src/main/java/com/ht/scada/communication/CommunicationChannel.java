@@ -85,7 +85,32 @@ public abstract class CommunicationChannel implements ICommChannel {
             }
         }
     }
-	
+
+    /**
+     * 遍历采集设备（RTU）对应的末端的所有遥信变量
+     * @param deviceAddr 设备地址过滤
+     */
+    public void forEachYc2YxTagVar(int deviceAddr, DataHandler<YxTagVar > dataHandler) {
+        for (EndTagWrapper model : endTagList) {// 遍历所有节点并进行处理
+            if (!isRunning()) {
+                return;
+            }
+            if (model.getEndTag().getDeviceAddr() != deviceAddr) {
+                continue;
+            }
+
+            for (YxTagVar var : model.getYc2YxVarList()) {
+                if (!isRunning()) {
+                    return;
+                }
+
+                if (!dataHandler.each(model, var)) {
+                    break;
+                }
+            }
+        }
+    }
+
     /**
      * 遍历采集设备（RTU）对应的末端的所有遥信变量
      * @param deviceAddr 设备地址过滤

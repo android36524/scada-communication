@@ -65,6 +65,7 @@ public class YxTagVar extends TagVar {
                         lastRecord.setResumeTime(null);
                     } else {// 报警解除
                         lastRecord.setResumeTime(date);
+                        lastFaultRecord = null;
                     }
                     endTagWrapper.addFaultRecord(lastRecord, storage.pushWnd);
                 }

@@ -1,9 +1,6 @@
 package com.ht.scada.communication.entity;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import java.util.Date;
 import java.util.UUID;
 
@@ -22,17 +19,18 @@ public class YxRecord {
 	private String name;// 变量名称
 	private String info;
 	private Boolean value;
+    @Temporal(TemporalType.TIMESTAMP)
 	private Date datetime;
 
     @Transient
     private boolean persisted;// 是否已经写入数据库
 
 	public YxRecord() {
-        this.id = UUID.randomUUID().toString();
+        this.id = UUID.randomUUID().toString().replace("-", "");
 	}
 
 	public YxRecord(String code, String name, String info, boolean value, Date datetime) {
-        this.id = UUID.randomUUID().toString();
+        this.id = UUID.randomUUID().toString().replace("-", "");
 		this.code = code;
 		this.name = name;
 		this.info = info;

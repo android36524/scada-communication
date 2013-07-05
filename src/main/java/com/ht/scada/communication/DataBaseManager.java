@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 public class DataBaseManager {
     private static final Logger log = LoggerFactory.getLogger(DataBaseManager.class);
     private static DataBaseManager instance = new DataBaseManager();
+    private KVStoreConfig kvConfig;
 
     public static DataBaseManager getInstance() {
         return instance;
@@ -45,14 +46,12 @@ public class DataBaseManager {
     private FaultRecordDao faultRecordDao;
     private OffLimitsRecordDao offLimitsRecordDao;
     private YxRecordDao yxRecordDao;
+    private VarGroupDataDao varGroupDataDao;
 
     private RealtimeDataService realtimeDataService;
     private HistoryDataService historyDataService;
 
     private DataBaseManager() {
-    }
-
-    public void init() {
         dataSource = new DruidDataSource();
         dataSource.setMaxWait(60000);
         dataSource.setMaxActive(20);
@@ -74,6 +73,11 @@ public class DataBaseManager {
 
         dbTemplate = new DbUtilsTemplate(dataSource);
 
+        initJedisPool();
+        initKVStore();
+    }
+
+    public void init() {
         channelInfoDao = new ChannelInfoDaoImpl();
         channelInfoDao.setDbUtilsTemplate(dbTemplate);
 
@@ -94,35 +98,36 @@ public class DataBaseManager {
         yxRecordDao = new YxRecordDaoImpl();
         yxRecordDao.setDbUtilsTemplate(dbTemplate);
 
-        initJedisPool();
+        varGroupDataDao = new VarGroupDataDaoImpl(dbTemplate);
+
         realtimeDataService = new RealtimeDataServiceImpl(jedisPool);
 
-        KVStoreConfig config = initKVStore();
-        historyDataService = new HistoryDataServiceImpl(kvStore, config.getRequestTimeout(TimeUnit.MILLISECONDS));
+        historyDataService = new HistoryDataServiceImpl(kvStore, kvConfig.getRequestTimeout(TimeUnit.MILLISECONDS));
+        // TODO: 自动生成关系型数据库自定义的表
     }
 
-    private KVStoreConfig initKVStore() {
-        KVStoreConfig config = new KVStoreConfig(Config.INSTANCE.getKvStoreName(), Config.INSTANCE.getKvHostPort());
-        config.setRequestLimit(RequestLimitConfig.getDefault());
+    private void initKVStore() {
+        kvConfig = new KVStoreConfig(Config.INSTANCE.getKvStoreName(), Config.INSTANCE.getKvHostPort());
+        kvConfig.setRequestLimit(RequestLimitConfig.getDefault());
+
         try {
-            kvStore = KVStoreFactory.getStore(config);
+            kvStore = KVStoreFactory.getStore(kvConfig);
         } catch (FaultException e) {
             log.error("无法连接到时任何一个节点", e);
         }
-        return config;
     }
 
     private void initJedisPool() {
-        JedisPoolConfig config =new JedisPoolConfig();//Jedis池配置
-        config.setMaxActive(Config.INSTANCE.getRedisMaxActive());// 最大活动的对象个数
-        config.setMaxIdle(Config.INSTANCE.getRedisMaxIdle());// 对象最大空闲时间
-        config.setMaxWait(Config.INSTANCE.getRedisMaxWait());// 获取对象时最大等待时间
+        JedisPoolConfig jedisPoolConfig =new JedisPoolConfig();//Jedis池配置
+        jedisPoolConfig.setMaxActive(Config.INSTANCE.getRedisMaxActive());// 最大活动的对象个数
+        jedisPoolConfig.setMaxIdle(Config.INSTANCE.getRedisMaxIdle());// 对象最大空闲时间
+        jedisPoolConfig.setMaxWait(Config.INSTANCE.getRedisMaxWait());// 获取对象时最大等待时间
         //config.setTestOnBorrow(true);
         if (Config.INSTANCE.getRedisPassword() != null) {
-            jedisPool = new JedisPool(config, Config.INSTANCE.getRedisHost(), Config.INSTANCE.getRedisPort(),
+            jedisPool = new JedisPool(jedisPoolConfig, Config.INSTANCE.getRedisHost(), Config.INSTANCE.getRedisPort(),
                     Config.INSTANCE.getRedisTimeout(), Config.INSTANCE.getRedisPassword());
         } else {
-            jedisPool = new JedisPool(config, Config.INSTANCE.getRedisHost(), Config.INSTANCE.getRedisPort());
+            jedisPool = new JedisPool(jedisPoolConfig, Config.INSTANCE.getRedisHost(), Config.INSTANCE.getRedisPort());
         }
     }
 
@@ -180,5 +185,9 @@ public class DataBaseManager {
 
     public YxRecordDao getYxRecordDao() {
         return yxRecordDao;
+    }
+
+    public VarGroupDataDao getVarGroupDataDao() {
+        return varGroupDataDao;
     }
 }

@@ -6,7 +6,7 @@ import com.ht.scada.communication.dao.FaultRecordDao;
 import com.ht.scada.communication.dao.OffLimitsRecordDao;
 import com.ht.scada.communication.dao.YxRecordDao;
 import com.ht.scada.communication.data.kv.IKVRecord;
-import com.ht.scada.communication.data.kv.VarGroupData;
+import com.ht.scada.communication.entity.VarGroupData;
 import com.ht.scada.communication.entity.FaultRecord;
 import com.ht.scada.communication.entity.OffLimitsRecord;
 import com.ht.scada.communication.entity.YxRecord;

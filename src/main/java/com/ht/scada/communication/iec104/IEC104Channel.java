@@ -6,6 +6,7 @@ import com.ht.iec104.master.MasterHandler;
 import com.ht.iec104.master.YKHandler;
 import com.ht.iec104.master.YTHandler;
 import com.ht.iec104.util.TiConst;
+import com.ht.scada.common.tag.util.DataType;
 import com.ht.scada.common.tag.util.VarGroupEnum;
 import com.ht.scada.common.tag.util.VarTypeEnum;
 import com.ht.scada.communication.CommunicationChannel;
@@ -18,6 +19,7 @@ import com.ht.scada.communication.model.YxTagVar;
 import com.ht.scada.communication.util.ChannelFrameFactory;
 import com.ht.scada.communication.util.ChannelFrameFactory.IEC104Frame;
 import com.ht.scada.communication.util.CommUtil;
+import com.ht.scada.communication.util.DataValueUtil;
 import com.ht.scada.communication.util.PortInfoFactory;
 import com.ht.scada.communication.util.PortInfoFactory.TcpIpInfo;
 import org.slf4j.Logger;
@@ -161,6 +163,37 @@ public class IEC104Channel extends CommunicationChannel {
             final Calendar[] datetime = frame.getTimes();
             final boolean sq = frame.sq;
 
+            forEachYc2YxTagVar(master.getSlaveID(), new DataHandler<YxTagVar>() {
+                @Override
+                public boolean each(EndTagWrapper model, YxTagVar var) {
+                    VarGroupEnum varGroup = var.tpl.getVarGroup();
+                    int interval = model.getSaveIntvl4VarGroup(varGroup);
+                    if (interval <= 0) {
+                        interval = defaultInterval;
+                    }
+                    if (sq) {// 连续的地址
+                        int index = var.tpl.getDataId() - infoID[0];
+                        if (index >= 0 && index < value.length) {
+                            boolean v = DataValueUtil.parseBoolValue(value[index], var.getTpl().getBitOffset());
+                            Calendar cal = datetime[index];
+                            String key = CommUtil.createRTUHisDataKey(varGroup, cal, interval);
+                            model.addRTUYxHisData(var, key, cal.getTime(), v);
+                            return true;
+                        }
+                    } else {// 非连续的地址
+                        for (int i = 0; i < infoID.length; i++) {
+                            if (infoID[i] == var.tpl.getDataId()) {
+                                boolean v = DataValueUtil.parseBoolValue(value[i], var.getTpl().getBitOffset());
+                                Calendar cal = datetime[i];
+                                String key = CommUtil.createRTUHisDataKey(varGroup, cal, interval);
+                                model.addRTUYxHisData(var, key, cal.getTime(), v);
+                                return true;
+                            }
+                        }
+                    }
+                    return true;
+                }
+            });
             forEachYcTagVar(master.getSlaveID(), new DataHandler<YcTagVar>() {
                 @Override
                 public boolean each(EndTagWrapper model, YcTagVar var) {
@@ -189,27 +222,83 @@ public class IEC104Channel extends CommunicationChannel {
                             }
                         }
                     } else {// 单个的遥测变量
-                        int index = -1;
                         if (sq) {// 连续的地址
                             int i = var.tpl.getDataId() - infoID[0];
                             if (i >= 0 && i < value.length) {
-                                index = i;
+                                DataType dataType = var.getTpl().getDataType();
+                                float v = Float.NaN;//.calcValue(value[i]);
+                                if (dataType == DataType.INT16) {
+                                    v = var.calcValue(value[i]);
+                                } else if (dataType == DataType.INT32 && i + 1 < value.length) {
+                                    v = var.calcValue((value[i] << 16) + value[i + 1]);
+                                } else if (dataType == DataType.BYTE_H) {
+                                    v = var.calcValue(value[i] >> 8);
+                                } else if (dataType == DataType.BYTE_L) {
+                                    v = var.calcValue(value[i] & 0xFF);
+                                }
+
+                                if (!Float.isNaN(v)) {
+                                    Calendar cal = datetime[i];
+                                    String key = CommUtil.createRTUHisDataKey(varGroup, cal, interval);
+                                    model.addRTUYcHisData(var, key, cal.getTime(), v);
+                                }
                             }
                         } else {// 非连续的地址
-                            for (int i = 0; i < infoID.length; i++) {
-                                if (infoID[i] == var.tpl.getDataId()) {
-                                    index = i;
-                                    break;
+                            DataType dataType = var.getTpl().getDataType();
+                            Calendar cal = null;//datetime[i];
+                            float v = Float.NaN;//.calcValue(value[i]);
+                            if (dataType == DataType.INT16) {
+                                for (int i = 0; i < infoID.length; i++) {
+                                    if (infoID[i] == var.tpl.getDataId()) {
+                                        v = var.calcValue(value[i]);
+                                        cal = datetime[i];
+                                        break;
+                                    }
                                 }
+                            } else if (dataType == DataType.INT32) {
+                                boolean hget = false;
+                                boolean lget = false;
+                                int h = -1;
+                                int l = -1;
+                                for (int i = 0; i < infoID.length; i++) {
+                                    if (infoID[i] == var.tpl.getDataId()) {
+                                        cal = datetime[i];
+                                        h = value[i];
+                                        hget = true;
+                                    } else if (infoID[i] == var.tpl.getDataId() + 1) {
+                                        l = value[i];
+                                        lget = true;
+                                    }
+                                    if (lget && hget) {
+                                        break;
+                                    }
+                                }
+                                if (lget && hget) {
+                                    v = var.calcValue((h << 16) + l);
+                                }
+                            } else if (dataType == DataType.BYTE_H) {
+                                for (int i = 0; i < infoID.length; i++) {
+                                    if (infoID[i] == var.tpl.getDataId()) {
+                                        cal = datetime[i];
+                                        v = var.calcValue(value[i] >> 8);
+                                        break;
+                                    }
+                                }
+                            } else if (dataType == DataType.BYTE_L) {
+                                for (int i = 0; i < infoID.length; i++) {
+                                    if (infoID[i] == var.tpl.getDataId()) {
+                                        cal = datetime[i];
+                                        v = var.calcValue(value[i] & 0xFF);
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!Float.isNaN(v) && cal != null) {
+                                String key = CommUtil.createRTUHisDataKey(varGroup, cal, interval);
+                                model.addRTUYcHisData(var, key, cal.getTime(), v);
                             }
                         }
 
-                        if (index >= 0) {
-                            float v = var.calcValue(value[index]);
-                            Calendar cal = datetime[index];
-                            String key = CommUtil.createRTUHisDataKey(varGroup, cal, interval);
-                            model.addRTUYcHisData(var, key, cal.getTime(), v);
-                        }
                     }
 
                     return true;
@@ -286,6 +375,9 @@ public class IEC104Channel extends CommunicationChannel {
                 @Override
                 public boolean each(EndTagWrapper model, YxTagVar var) {
 
+                    if (var.getTpl().getBitOffset() >= 0) {// 遥测转遥信变量
+                        return true;
+                    }
                     VarGroupEnum varGroup = var.tpl.getVarGroup();
                     int interval = model.getSaveIntvl4VarGroup(varGroup);
                     if (interval <= 0) {
@@ -324,7 +416,7 @@ public class IEC104Channel extends CommunicationChannel {
      */
     private void handleYmFrame(final Date date) {
 
-        log.debug("{}:本次召唤累计返回{}个遥脉帧", channel.getName(), master.getYmFrameQueue().size());
+        //log.debug("{}:本次召唤累计返回{}个遥脉帧", channel.getName(), master.getYmFrameQueue().size());
         IEC104IFrame frame;
         while ((frame = master.getYmFrameQueue().poll()) != null) {
 
@@ -361,7 +453,7 @@ public class IEC104Channel extends CommunicationChannel {
      */
     private void handleYcFrame(final Date date) {
 
-        log.debug("{}:本次召唤累计返回{}个遥测帧", channel.getName(), master.getYcFrameQueue().size());
+        //log.debug("{}:本次召唤累计返回{}个遥测帧", channel.getName(), master.getYcFrameQueue().size());
 
         IEC104IFrame frame;
         while ((frame = master.getYcFrameQueue().poll()) != null) {
@@ -369,6 +461,29 @@ public class IEC104Channel extends CommunicationChannel {
             final int[] infoID = frame.infoID;
             final int[] value = frame.getYcValue();
             final boolean sq = frame.sq;
+
+            forEachYc2YxTagVar(master.getSlaveID(), new DataHandler<YxTagVar>() {
+                @Override
+                public boolean each(EndTagWrapper model, YxTagVar var) {
+                    if (sq) {// 连续的地址
+                        int index = var.tpl.getDataId() - infoID[0];
+                        if (index >= 0 && index < value.length) {
+                            boolean v = DataValueUtil.parseBoolValue(value[index], var.getTpl().getBitOffset());
+                            var.update(v, date);
+                            return true;
+                        }
+                    } else {// 非连续的地址
+                        for (int i = 0; i < infoID.length; i++) {
+                            if (infoID[i] == var.tpl.getDataId()) {
+                                boolean v = DataValueUtil.parseBoolValue(value[i], var.getTpl().getBitOffset());
+                                var.update(v, date);
+                                return true;
+                            }
+                        }
+                    }
+                    return true;
+                }
+            });
 
             //log.debug("   ID:{}", Arrays.toString(infoID));
             //log.debug("Value:{}", Arrays.toString(value));
@@ -391,18 +506,72 @@ public class IEC104Channel extends CommunicationChannel {
                                 }
                             }
                         } else {// 单个遥测
-                            int i = var.tpl.getDataId() - infoID[0];
-                            if (i >= 0 && i < value.length) {
-                                var.update(value[i], date);
-                                return true;
+                            int i = var.getTpl().getDataId() - infoID[0];
+                            DataType dataType = var.getTpl().getDataType();
+                            if (dataType == DataType.INT16) {
+                                if (i >= 0 && i < value.length) {
+                                    var.update(value[i], date);
+                                    return true;
+                                }
+                            } else if (dataType == DataType.INT32) {// 高字在前，低字在后
+                                if (i >= 0 && i + 1 < value.length) {
+                                    var.update((value[i] << 16) + value[i + 1], date);
+                                    return true;
+                                }
+                            } else if (dataType == DataType.BYTE_H) {// 高字节
+                                if (i >= 0 && i < value.length) {
+                                    var.update(value[i] >> 8, date);
+                                    return true;
+                                }
+                            } else if (dataType == DataType.BYTE_L) {// 低字节
+                                if (i >= 0 && i < value.length) {
+                                    var.update(value[i] & 0xFF, date);
+                                    return true;
+                                }
                             }
                         }
                     } else {
                         if (var.tpl.getVarType() == VarTypeEnum.YC) {
-                            for (int i = 0; i < infoID.length; i++) {
-                                if (infoID[i] == var.tpl.getDataId()) {
-                                    var.update(value[i], date);
-                                    return true;
+                            DataType dataType = var.getTpl().getDataType();
+                            if (dataType == DataType.INT16) {
+                                for (int i = 0; i < infoID.length; i++) {
+                                    if (infoID[i] == var.tpl.getDataId()) {
+                                        var.update(value[i], date);
+                                        return true;
+                                    }
+                                }
+                            } else if (dataType == DataType.INT32) {// 高字在前，低字在后
+                                boolean hget = false;
+                                boolean lget = false;
+                                int h = -1;
+                                int l = -1;
+                                for (int i = 0; i < infoID.length; i++) {
+                                    if (infoID[i] == var.getTpl().getDataId()) {
+                                        h = value[i];
+                                        hget = true;
+                                    } else if (infoID[i] == var.getTpl().getDataId() + 1) {
+                                        l = value[i];
+                                        lget = true;
+                                    }
+
+                                    if (hget && lget) {
+                                        var.update((h << 16) | l, date);
+                                        return true;
+                                    }
+                                }
+                            } else if (dataType == DataType.BYTE_H) {// 高字节
+                                for (int i = 0; i < infoID.length; i++) {
+                                    if (infoID[i] == var.tpl.getDataId()) {
+                                        var.update(value[i] >> 8, date);
+                                        return true;
+                                    }
+                                }
+                            } else if (dataType == DataType.BYTE_L) {// 低字节
+                                for (int i = 0; i < infoID.length; i++) {
+                                    if (infoID[i] == var.tpl.getDataId()) {
+                                        var.update(value[i] & 0xFF, date);
+                                        return true;
+                                    }
                                 }
                             }
                         }
@@ -418,7 +587,7 @@ public class IEC104Channel extends CommunicationChannel {
      * @param date
      */
     private void handleYxFrame(final Date date) {
-        log.debug("{}:本次召唤累计返回{}个遥信帧", channel.getName(), master.getYxFrameQueue().size());
+        //log.debug("{}:本次召唤累计返回{}个遥信帧", channel.getName(), master.getYxFrameQueue().size());
 
         IEC104IFrame frame = null;
         while ((frame = master.getYxFrameQueue().poll()) != null) {
@@ -431,6 +600,9 @@ public class IEC104Channel extends CommunicationChannel {
 
                 @Override
                 public boolean each(EndTagWrapper model, YxTagVar var) {
+                    if (var.getTpl().getBitOffset() >= 0) {// 遥测转遥信变量
+                        return true;
+                    }
                     if (sq) {// 连续的地址
                         int index = var.tpl.getDataId() - infoID[0];
                         if (index >= 0 && index < value.length) {
@@ -615,7 +787,7 @@ public class IEC104Channel extends CommunicationChannel {
 
             for (final IEC104Frame frame: frameList) {
                 if (frame.ti == ti) {
-                    if (frame.ti == TiConst.CALL_HIS_DAT) {// RTU历史数据召唤结束
+                    if (frame.ti == TiConst.CALL_HIS_DAT && frame.interval > 60) {// RTU历史数据召唤结束
                         executorService.execute(new Runnable() {
                             @Override
                             public void run() {

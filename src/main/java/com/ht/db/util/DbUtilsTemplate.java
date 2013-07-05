@@ -91,9 +91,9 @@ public class DbUtilsTemplate {
         List<Map<String, Object>> list = new ArrayList<Map<String,Object>>(); 
         try { 
             if (params == null) { 
-                list = (List<Map<String, Object>>) queryRunner.query(sql, new MapListHandler()); 
+                list = queryRunner.query(sql, new MapListHandler());
             } else { 
-                list = (List<Map<String, Object>>) queryRunner.query(sql, new MapListHandler(), params); 
+                list = queryRunner.query(sql, new MapListHandler(), params);
             } 
         } catch (SQLException e) { 
             LOG.error("Error occured while attempting to query data", e); 
@@ -135,8 +135,8 @@ public class DbUtilsTemplate {
     public <T> T findFirst(Class<T> entityClass, String sql, Object ...params) {
         queryRunner = new QueryRunner(dataSource); 
         Object object = null; 
-        try { 
-            if (params == null) { 
+        try {
+            if (params == null) {
                 object = queryRunner.query(sql, new BeanHandler(entityClass)); 
             } else { 
                 object = queryRunner.query(sql, new BeanHandler(entityClass), params); 
@@ -159,31 +159,31 @@ public class DbUtilsTemplate {
         Map<String, Object> map = null; 
         try { 
             if (params == null) { 
-                map = (Map<String, Object>) queryRunner.query(sql, new MapHandler()); 
+                map = queryRunner.query(sql, new MapHandler());
             } else { 
-                map = (Map<String, Object>) queryRunner.query(sql, new MapHandler(), params); 
+                map = queryRunner.query(sql, new MapHandler(), params);
             } 
         } catch (SQLException e) { 
             LOG.error("Error occured while attempting to query data", e); 
         } 
         return map; 
-    } 
+    }
 
-    /** 
+    /**
      * 查询某一条记录，并将指定列的数据转换为Object 
      * @param sql sql语句 
      * @param columnName 列名 
      * @param params 参数数组 
      * @return 结果对象 
      */ 
-    public Object findBy(String sql, String columnName, Object ...params) {
+    public <T> T findBy(String sql, String columnName, Object ...params) {
         queryRunner = new QueryRunner(dataSource); 
-        Object object = null; 
+        T object = null;
         try { 
             if (params == null) { 
-                object = queryRunner.query(sql, new ScalarHandler(columnName)); 
+                object = queryRunner.query(sql, new ScalarHandler<T>(columnName));
             } else { 
-                object = queryRunner.query(sql, new ScalarHandler(columnName), params); 
+                object = queryRunner.query(sql, new ScalarHandler<T>(columnName), params);
             } 
         } catch (SQLException e) { 
             LOG.error("Error occured while attempting to query data", e); 
@@ -199,14 +199,14 @@ public class DbUtilsTemplate {
      * @param params 参数数组 
      * @return 结果对象 
      */ 
-    public Object findBy(String sql, int columnIndex, Object ...params) {
+    public <T> T findBy(String sql, int columnIndex, Object ...params) {
         queryRunner = new QueryRunner(dataSource); 
-        Object object = null; 
+        T object = null;
         try { 
             if (params == null) { 
-                object = queryRunner.query(sql, new ScalarHandler(columnIndex)); 
+                object = queryRunner.query(sql, new ScalarHandler<T>(columnIndex));
             } else { 
-                object = queryRunner.query(sql, new ScalarHandler(columnIndex), params); 
+                object = queryRunner.query(sql, new ScalarHandler<T>(columnIndex), params);
             } 
         } catch (SQLException e) { 
             LOG.error("Error occured while attempting to query data", e); 

@@ -1,7 +1,11 @@
 package com.ht.scada.communication;
 
+import com.ht.db.Database;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 
 /**
  * Created with IntelliJ IDEA.
@@ -14,6 +18,7 @@ public enum Config {
     INSTANCE;
 
     private PropertiesConfiguration config;
+    private Database database;
 
     /**
      *
@@ -52,12 +57,15 @@ public enum Config {
     private int redisTimeout;
 
     private Config() {
-    }
-
-    public void init(String configPath) {
+//    }
+//
+//    public void init(String configPath) {
         try {
-            config = new PropertiesConfiguration(configPath);
+            //config = new PropertiesConfiguration(configPath);
+            config = new PropertiesConfiguration(Config.class.getResource("/config.properties").toURI().toURL());
             config.setAutoSave(true);
+
+            database = Database.valueOf(config.getString("database", Database.MYSQL.toString()));
 
             url = config.getString("url");
             webPort = config.getInt("web.port", 8080);
@@ -81,11 +89,27 @@ public enum Config {
 
         } catch (ConfigurationException e) {
             e.printStackTrace();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        } catch (URISyntaxException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
     }
 
     public PropertiesConfiguration getConfig() {
         return config;
+    }
+
+    public void setConfig(PropertiesConfiguration config) {
+        this.config = config;
+    }
+
+    public Database getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(Database database) {
+        this.database = database;
     }
 
     public ServiceMode getMode() {

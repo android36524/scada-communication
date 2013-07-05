@@ -142,7 +142,7 @@ public class ChannelFrameFactory {
 		public int ti;
 		/**
 		 * 执行间隔(s)<br/>
-         * 如果是历史数据召唤帧，执行间隔表示每次历史数据召唤的时间范围
+         * 如果是历史数据召唤帧，执行间隔表示每次历史数据召唤的时间范围, 其值必须大于60
          * 如果执行间隔请设置为0, 则只在每次建立连接时执行1次召唤
 		 */
 		public int interval;

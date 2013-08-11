@@ -7,25 +7,28 @@
     <script type="text/javascript" src="../../resources/js/jquery.tools.min.js" th:src="@{/resources/js/jquery.tools.min.js}"></script>
     <link href="../../resources/css/style.css" th:href="@{/resources/css/style.css}" rel="stylesheet"/>
 
-    <script type="text/javascript">
+    <script type="text/javascript" th:inline="javascript">
+        /*<![CDATA[*/
         function search() {
             var text = $("#search").val();
             $("#tbContent tr").not(":contains('"+text+"')").hide();
             $("#tbContent tr:contains('"+text+"')").show();
         }
+        var BASE_URL = /*[[@{/}]]*/ '/';
         function start() {
             if (window.confirm("您确定要启动数据采集服务运行吗？"))
-                window.location.href = "/main/start";
+                window.location.href = BASE_URL + "main/start";
         }
 
         function stop() {
             if (window.confirm("您确定要停止数据采集服务运行吗？"))
-                window.location.href = "/main/stop";
+                window.location.href = BASE_URL + "main/stop";
         }
 
         function edit() {
-            window.location.href = "/main/edit"
+            window.location.href = BASE_URL + "main/edit"
         }
+        /*]]>*/
     </script>
 </head>
 <body>

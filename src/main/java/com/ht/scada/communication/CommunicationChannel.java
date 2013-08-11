@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 /**
  * @author 薄成文
@@ -162,6 +163,33 @@ public abstract class CommunicationChannel implements ICommChannel {
     }
 
     /**
+     * 遍历采集设备（RTU）对应的末端的所有遥测数组变量
+     * @param deviceAddr 设备地址过滤
+     */
+    protected void forEachYcArrayTagVar(int deviceAddr, DataHandler<YcTagVar> dataHandler) {
+        for (EndTagWrapper model : endTagList) {// 遍历所有节点并进行处理
+            if (!isRunning()) {
+                return;
+            }
+            if (model.getEndTag().getDeviceAddr() != deviceAddr) {
+                continue;
+            }
+
+            for (YcTagVar var : model.getYcArrayVarList()) {
+                if (!isRunning()) {
+                    return;
+                }
+
+                if (var.getLastArrayValue() != null) {// 遥测数组
+                    if (!dataHandler.each(model, var)) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * 遍历采集设备（RTU）对应的末端的所有遥脉变量
      * @param deviceAddr 设备地址过滤
      */
@@ -210,6 +238,126 @@ public abstract class CommunicationChannel implements ICommChannel {
                 }
             }
         }
+    }
+
+    protected void forEachAsciiTagVar(int deviceAddr, DataHandler<AsciiTagVar> dataHandler) {
+        for (EndTagWrapper model : endTagList) {// 遍历所有节点并进行处理
+            if (!isRunning()) {
+                return;
+            }
+            if (model.getEndTag().getDeviceAddr() != deviceAddr) {
+                continue;
+            }
+
+            for (AsciiTagVar var : model.getAsciiTagVarList()) {
+                if (!isRunning()) {
+                    return;
+                }
+
+                if (!dataHandler.each(model, var)) {
+
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * 遍历采集设备（RTU）对应的末端的所有遥控变量
+     * @param deviceAddr 设备地址过滤
+     */
+    protected void forEachYkTagVar(int deviceAddr, DataHandler<TagVar> dataHandler) {
+        for (EndTagWrapper model : endTagList) {// 遍历所有节点并进行处理
+            if (!isRunning()) {
+                return;
+            }
+            if (deviceAddr > 0 && model.getEndTag().getDeviceAddr() != deviceAddr) {
+                continue;
+            }
+
+            for (TagVar var : model.getYkVarList()) {
+                if (!isRunning()) {
+                    return;
+                }
+
+                if (!dataHandler.each(model, var)) {
+
+                    break;
+                }
+            }
+        }
+    }
+
+    public TagVar getYkVar(final String endCode, final String varName) {
+        for (EndTagWrapper model : endTagList) {// 遍历所有节点并进行处理
+            if (!isRunning()) {
+                return null;
+            }
+
+            if (!model.getEndTag().getCode().equals(endCode)) {
+                continue;
+            }
+
+            for (TagVar var : model.getYkVarList()) {
+                if (!isRunning()) {
+                    return null;
+                }
+                if (var.getTpl().getVarName().equals(varName)) {
+                    return var;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 遍历采集设备（RTU）对应的末端的所有遥控变量
+     * @param deviceAddr 设备地址过滤
+     */
+    protected void forEachYtTagVar(int deviceAddr, DataHandler<TagVar> dataHandler) {
+        for (EndTagWrapper model : endTagList) {// 遍历所有节点并进行处理
+            if (!isRunning()) {
+                return;
+            }
+            if (model.getEndTag().getDeviceAddr() != deviceAddr) {
+                continue;
+            }
+
+            for (TagVar var : model.getYtVarList()) {
+                if (!isRunning()) {
+                    return;
+                }
+
+                if (!dataHandler.each(model, var)) {
+
+                    break;
+                }
+            }
+        }
+    }
+
+    public TagVar getYtVar(final String endCode, final String varName) {
+        for (EndTagWrapper model : endTagList) {// 遍历所有节点并进行处理
+            if (!isRunning()) {
+                return null;
+            }
+
+            if (!model.getEndTag().getCode().equals(endCode)) {
+                continue;
+            }
+
+            for (TagVar var : model.getYtVarList()) {
+                if (!isRunning()) {
+                    return null;
+                }
+                if (var.getTpl().getVarName().equals(varName)) {
+                    return var;
+                }
+            }
+        }
+
+        return null;
     }
 
     public List<EndTagWrapper> getEndTagList() {
@@ -264,6 +412,9 @@ public abstract class CommunicationChannel implements ICommChannel {
 	protected static interface DataHandler<T> {
 		boolean each(EndTagWrapper model, T var);
 	}
+
+    protected static interface DataHandler2<T, V> extends DataHandler<T>, Callable<V> {
+    }
 
     public static interface EndTagHandler {
         boolean each(EndTagWrapper model);

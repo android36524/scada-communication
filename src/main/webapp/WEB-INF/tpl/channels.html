@@ -26,6 +26,7 @@
             <tr>
                 <th id="nameSort">通道名称</th>
                 <th id="idxSort" >序号</th>
+                <th>状态</th>
                 <th>通讯规约</th>
                 <th>端口信息</th>
                 <th>数据监测</th>
@@ -36,6 +37,7 @@
         <tr th:each="channel : ${channels}" th:title="'通讯帧：' + ${channel.frames}">
             <td th:text="${channel.name}"></td>
             <td th:text="${channel.idx}"></td>
+            <td th:text="${channel.onLine} ? '在线' : '离线'"></td>
             <td th:text="${channel.protocal}"></td>
             <td th:text="${channel.portInfo}"></td>
             <td><a href="endTag.html" th:href="@{/endTag(idx=${channel.idx})}" target="_blank">打开</a></td>

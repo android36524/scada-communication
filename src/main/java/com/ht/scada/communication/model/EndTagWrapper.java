@@ -58,6 +58,9 @@ public class EndTagWrapper {
     private final List<YcTagVar> ycVarList = new ArrayList<>();
     private final List<YmTagVar> ymVarList = new ArrayList<>();
     private final List<YxTagVar> yxVarList = new ArrayList<>();
+    private final List<YcTagVar> ycArrayVarList = new ArrayList<>();
+    private final List<AsciiTagVar> asciiTagVarList = new ArrayList<>();
+
     /**
      * 遥测转遥信列表，该列表中的变量包含在yxVarList中
      */
@@ -88,8 +91,7 @@ public class EndTagWrapper {
             VarGroupWrapper varGroupWrapper = varGroupWrapperMap.get(tplWrapper.getTagVarTpl().getVarGroup());
             if (varGroupWrapper == null) {
                 String msg = "未找到变量分组" + tplWrapper.getTagVarTpl().getVarGroup() + "的配置信息";
-                log.error(msg);
-                throw new RuntimeException(msg);
+                log.warn(msg);
             }
 
             switch (tplWrapper.getTagVarTpl().getVarType()) {
@@ -105,7 +107,7 @@ public class EndTagWrapper {
                         rtuStatusVar = yxTagVar;
                     }
                     DataType dataType = tplWrapper.getTagVarTpl().getDataType();
-                    if (dataType == DataType.INT16 || dataType == DataType.INT32) {// 遥测转遥信
+                    if (dataType == DataType.INT16 || dataType == DataType.INT32) {// 遥测转遥信,需要用到offset属性
                         this.yc2YxVarList.add(yxTagVar);
                     }
                     break;
@@ -135,14 +137,22 @@ public class EndTagWrapper {
                     ytVarList.add(new TagVar(this, tplWrapper.getTagVarTpl()));
                     break;
                 case QT:
-                    if (tplWrapper.getTagVarTpl().getDataType() == DataType.INT16_ARRAY) {//遥测数组
+                    DataType dataType = tplWrapper.getTagVarTpl().getDataType();
+                    if (dataType == DataType.INT16_ARRAY) {//遥测数组变量也加入遥测列表
                         YcTagVar tagVar = createYcTagVar(ioInfoList, tplWrapper);
-                        ycVarList.add(tagVar);
+                        ycArrayVarList.add(tagVar);
                         if (varGroupWrapper != null) {
-                            varGroupWrapper.getYcVarList().add(tagVar);
+                            varGroupWrapper.getYcArrayVarList().add(tagVar);
                         }
+                    } else if (dataType == DataType.ASCII) {// ASCII类型变量，只存实时库，不存历史库
+                        AsciiTagVar tagVar = new AsciiTagVar(this, tplWrapper.getTagVarTpl());
+                        asciiTagVarList.add(tagVar);
+                        if (varGroupWrapper != null) {
+                            varGroupWrapper.getAsciiTagVarList().add(tagVar);
+                        }
+                    } else {
+                        qtVarList.add(new TagVar(this, tplWrapper.getTagVarTpl()));
                     }
-                    qtVarList.add(new TagVar(this, tplWrapper.getTagVarTpl()));
                     break;
             }
 		}
@@ -154,7 +164,9 @@ public class EndTagWrapper {
             VarGroupWrapper varGroupWrapper = varGroupWrapperMap.get(varGroup);
             if (varGroupWrapper.getYmVarList().isEmpty()
                     && varGroupWrapper.getYxVarList().isEmpty()
-                    && varGroupWrapper.getYcVarList().isEmpty()) {
+                    && varGroupWrapper.getYcVarList().isEmpty()
+                    && varGroupWrapper.getYcArrayVarList().isEmpty()
+                    && varGroupWrapper.getAsciiTagVarList().isEmpty()) {
                 varGroupToRemove.add(varGroup);
             } else {
                 List<String> list = new ArrayList<>();
@@ -222,6 +234,10 @@ public class EndTagWrapper {
         return ycVarList;
     }
 
+    public List<YcTagVar> getYcArrayVarList() {
+        return ycArrayVarList;
+    }
+
     public List<YmTagVar> getYmVarList() {
         return ymVarList;
     }
@@ -236,6 +252,10 @@ public class EndTagWrapper {
 
     public List<TagVar> getYtVarList() {
         return ytVarList;
+    }
+
+    public List<AsciiTagVar> getAsciiTagVarList() {
+        return asciiTagVarList;
     }
 
     private YmTagVar createYmTagVar(List<VarIOInfo> ioInfoList, TagVarTplWrapper tpl) {
@@ -365,8 +385,10 @@ public class EndTagWrapper {
             for (YcTagVar var : wrapper.getYcVarList()) {// 遍历该节点下的所有变量，并进行处理
                 if (!Float.isNaN(var.getLastYcValue())) {
                     data.getYcValueMap().put( var.getTpl().getVarName(), var.getLastYcValue());
-                } else if (var.getLastArrayValue() != null) {
-                    // TODO: 示功图数据打包完成后加入实时数据更新列表
+                }
+            }
+            for (YcTagVar var : wrapper.getYcArrayVarList()) {// 遍历该节点下的所有变量，并进行处理
+                if (var.getLastArrayValue() != null) {
                     List<String> list = new ArrayList<>(var.getLastArrayValue().length);
                     for (int i = 0; i < var.getLastArrayValue().length; i++) {
                         float v = var.getLastArrayValue()[i];

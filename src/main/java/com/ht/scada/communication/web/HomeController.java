@@ -25,7 +25,7 @@ public class HomeController implements IGTVGController {
         ctx.setVariable("today", Calendar.getInstance());
 
         ctx.setVariable("running", CommunicationManager.getInstance().isRunning());
-        ctx.setVariable("channelSize", 600);
+        ctx.setVariable("channelSize", CommunicationManager.getInstance().getChannels().size());
 
         ctx.setVariable("isSingle", false);
         ctx.setVariable("isMaster", false);

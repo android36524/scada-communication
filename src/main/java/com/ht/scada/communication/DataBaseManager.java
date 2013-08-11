@@ -1,12 +1,14 @@
 package com.ht.scada.communication;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import com.ht.db.Database;
 import com.ht.db.util.DbUtilsTemplate;
 import com.ht.scada.communication.dao.*;
 import com.ht.scada.communication.dao.impl.*;
 import com.ht.scada.communication.service.HistoryDataService;
 import com.ht.scada.communication.service.RealtimeDataService;
 import com.ht.scada.communication.service.impl.HistoryDataServiceImpl;
+import com.ht.scada.communication.service.impl.HistoryDataServiceImpl2;
 import com.ht.scada.communication.service.impl.RealtimeDataServiceImpl;
 import oracle.kv.*;
 import org.slf4j.Logger;
@@ -74,7 +76,9 @@ public class DataBaseManager {
         dbTemplate = new DbUtilsTemplate(dataSource);
 
         initJedisPool();
-        initKVStore();
+        if (Config.INSTANCE.getDatabase() == Database.ORACLE_KV) {
+            initKVStore();
+        }
     }
 
     public void init() {
@@ -102,8 +106,11 @@ public class DataBaseManager {
 
         realtimeDataService = new RealtimeDataServiceImpl(jedisPool);
 
-        historyDataService = new HistoryDataServiceImpl(kvStore, kvConfig.getRequestTimeout(TimeUnit.MILLISECONDS));
-        // TODO: 自动生成关系型数据库自定义的表
+        if (Config.INSTANCE.getDatabase() == Database.ORACLE_KV) {
+            historyDataService = new HistoryDataServiceImpl(kvStore, kvConfig.getRequestTimeout(TimeUnit.MILLISECONDS));
+        } else {
+            historyDataService = new HistoryDataServiceImpl2();
+        }
     }
 
     private void initKVStore() {

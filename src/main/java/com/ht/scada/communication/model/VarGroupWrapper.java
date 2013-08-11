@@ -10,12 +10,11 @@ public class VarGroupWrapper {
 	private final VarGroupInfo varGroupInfo;
 	private int lastMinute = -1;
 
-    /**
-     * TODO: 包括数组变量, 此种做法可能会造成错误的操作, 暂时没有更好的办法
-     */
     private final List<YcTagVar> ycVarList = new ArrayList<>();
+    private final List<YcTagVar> ycArrayVarList = new ArrayList<>();
     private final List<YmTagVar> ymVarList = new ArrayList<>();
     private final List<YxTagVar> yxVarList = new ArrayList<>();
+    private final List<AsciiTagVar> asciiTagVarList = new ArrayList<>();
 
 	public VarGroupWrapper(VarGroupInfo varGroupInfo) {
 		this.varGroupInfo = varGroupInfo;
@@ -37,11 +36,19 @@ public class VarGroupWrapper {
         return ycVarList;
     }
 
+    public List<YcTagVar> getYcArrayVarList() {
+        return ycArrayVarList;
+    }
+
     public List<YmTagVar> getYmVarList() {
         return ymVarList;
     }
 
     public List<YxTagVar> getYxVarList() {
         return yxVarList;
+    }
+
+    public List<AsciiTagVar> getAsciiTagVarList() {
+        return asciiTagVarList;
     }
 }

@@ -1,7 +1,7 @@
 package com.ht.scada.communication.cluser;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundMessageHandlerAdapter;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.ReadTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  * Time: 下午3:23
  * To change this template use File | Settings | File Templates.
  */
-public class MasterServerHandler extends ChannelInboundMessageHandlerAdapter<String> {
+public class MasterServerHandler extends ChannelInboundHandlerAdapter {
     private static Logger log = LoggerFactory.getLogger(MasterServerHandler.class);
 
     private final CallbackNotifier cb;
@@ -23,7 +23,7 @@ public class MasterServerHandler extends ChannelInboundMessageHandlerAdapter<Str
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, String msg) throws Exception {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         log.info("主机模式：收到从机信息({})-{}", ctx.channel().remoteAddress().toString(), msg);
     }
 

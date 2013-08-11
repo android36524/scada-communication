@@ -44,7 +44,8 @@ public class EndModelController implements IGTVGController {
         });
         ctx.setVariable("groupList", groupList);
 
-        templateEngine.process("endTag", ctx, response.getWriter());
+        String tpl = "endTag";
+        templateEngine.process(tpl, ctx, response.getWriter());
     }
 
 }

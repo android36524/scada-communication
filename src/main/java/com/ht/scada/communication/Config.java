@@ -43,6 +43,7 @@ public enum Config {
      * nosql数据库地址和端口
      */
     private String[] kvHostPort;
+
     /**
      * nosql数据库kvStore名称
      */
@@ -57,9 +58,6 @@ public enum Config {
     private int redisTimeout;
 
     private Config() {
-//    }
-//
-//    public void init(String configPath) {
         try {
             //config = new PropertiesConfiguration(configPath);
             config = new PropertiesConfiguration(Config.class.getResource("/config.properties").toURI().toURL());

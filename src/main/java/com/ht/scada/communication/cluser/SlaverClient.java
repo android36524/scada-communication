@@ -3,7 +3,6 @@ package com.ht.scada.communication.cluser;
 import com.ht.scada.communication.CommunicationManager;
 import com.ht.scada.communication.IService;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.BufType;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -86,7 +85,7 @@ public class SlaverClient implements IService {
                                 new IdleStateHandler(0,0,idleTime),
                                 new LineBasedFrameDecoder(80),
                                 new StringDecoder(CharsetUtil.UTF_8),
-                                new StringEncoder(BufType.BYTE, CharsetUtil.UTF_8),
+                                new StringEncoder(CharsetUtil.UTF_8),
                                 new SlaverClientHandler(new CallbackNotifier() {
                                     @Override
                                     public void onActive(ChannelHandlerContext ctx) {
@@ -137,7 +136,7 @@ public class SlaverClient implements IService {
         running = false;
         if (channel != null) {
             channel.close();
-            bootstrap.shutdown();
+            //bootstrap.shutdown();
         }
     }
 

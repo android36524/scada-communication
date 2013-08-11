@@ -25,7 +25,7 @@ public class RealtimeDataServiceImpl implements RealtimeDataService {
     public static final String YX_CHANGE_CHANNEL = "YxChangeChannel";
 
     /**
-     * "遥测越限发生"广播通道名称
+     * "遥测越限"广播通道名称
      */
     public static final String OFF_LIMITS_CHANNEL = "OffLimitsChannel";
 
@@ -66,6 +66,16 @@ public class RealtimeDataServiceImpl implements RealtimeDataService {
                 pipeline.set(entry.getKey(), entry.getValue());
             }
             pipeline.sync();
+        } finally {
+            pool.returnResource(jedis);
+        }
+    }
+
+    @Override
+    public void putValue(String k, String v) {
+        Jedis jedis = pool.getResource();
+        try {
+            jedis.set(k, v);
         } finally {
             pool.returnResource(jedis);
         }

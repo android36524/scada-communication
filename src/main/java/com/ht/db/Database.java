@@ -22,6 +22,8 @@ public enum Database {
 
 	SQL_SERVER,
 
-	SYBASE
+	SYBASE,
+
+    ORACLE_KV,
 
 }

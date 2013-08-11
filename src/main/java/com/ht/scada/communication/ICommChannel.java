@@ -16,21 +16,19 @@ public interface ICommChannel extends IService {
 
 	/**
 	 * 执行遥控操作
-     * @param deviceAddr
-	 * @param dataID
+     * @param endCode
+	 * @param varName
 	 * @param value
 	 * @return
 	 */
-	boolean exeYK(int deviceAddr, int dataID, boolean value);
+	boolean exeYK(String endCode, String varName, boolean value);
 
 	/**
 	 * 执行遥调操作
-     *
-     *
-     * @param deviceAddr
-	 * @param dataID
+     * @param endCode
+	 * @param varName
 	 * @param value
 	 * @return
 	 */
-	boolean exeYT(int deviceAddr, int dataID, int value);
+	boolean exeYT(String endCode, String varName, int value);
 }

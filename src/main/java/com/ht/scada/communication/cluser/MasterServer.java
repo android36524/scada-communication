@@ -2,10 +2,7 @@ package com.ht.scada.communication.cluser;
 
 import com.ht.scada.communication.IService;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -35,6 +32,7 @@ public class MasterServer implements IService {
     private int port;
 
     private ServerBootstrap bootstrap;
+    private Channel channel;
 
     public MasterServer(int port) {
         this.port = port;
@@ -77,7 +75,7 @@ public class MasterServer implements IService {
                 });
 
         // Bind and start to accept incoming connections.
-        bootstrap.bind(port);
+        channel = bootstrap.bind(port).channel();
     }
 
     @Override
@@ -85,7 +83,9 @@ public class MasterServer implements IService {
         log.info("停止主机监听服务.");
         if (running) {
             running = false;
-            bootstrap.shutdown();
+            if (channel != null) {
+                channel.close();
+            }
         }
     }
 

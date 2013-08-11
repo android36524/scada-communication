@@ -17,8 +17,6 @@ public interface HistoryDataService {
 	
 	public void saveVarGroupData(List<VarGroupData> list);
 
-    public List<VarGroupData> getVarGroupDataByDatetimeRange(String code, VarGroupEnum varGroup, Date start, Date end);
-
     /**
      * 查询某监控对象在指定时间范围内的分组历史数据
      * @param code 监控对象编辑
@@ -41,12 +39,4 @@ public interface HistoryDataService {
      */
     long getVarGroupDataCount(String code, VarGroupEnum varGroup, Date start, Date end);
 
-    /**
-     * 查询该时间点最新的一条数据记录
-     * @param code
-     * @param varGroup
-     * @param start
-     * @return 大于起始时间的第一条数据记录, 返回结果可以为空
-     */
-    VarGroupData getVarGroupData(String code, VarGroupEnum varGroup, Date start);
 }

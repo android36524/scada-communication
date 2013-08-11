@@ -19,6 +19,7 @@ import java.util.Map;
 public interface RealtimeDataService {
 
     void putValus(Map<String, String> kvMap);
+    void putValue(String k, String v);
 
     /**
      * 将末端分组变量写入实时数据库(只包括遥信、遥测、遥控变量,不包括遥测数据)

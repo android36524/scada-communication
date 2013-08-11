@@ -35,6 +35,6 @@ public class StartStopServlet extends HttpServlet {
                 e.printStackTrace();
             }
         }
-        response.sendRedirect("/");
+        response.sendRedirect(request.getServletContext().getContextPath());
     }
 }

@@ -11,17 +11,17 @@ import com.ht.scada.common.tag.util.VarGroupEnum;
 import com.ht.scada.common.tag.util.VarTypeEnum;
 import com.ht.scada.communication.CommunicationChannel;
 import com.ht.scada.communication.CommunicationManager;
+import com.ht.scada.communication.DataBaseManager;
 import com.ht.scada.communication.entity.ChannelInfo;
-import com.ht.scada.communication.model.EndTagWrapper;
-import com.ht.scada.communication.model.YcTagVar;
-import com.ht.scada.communication.model.YmTagVar;
-import com.ht.scada.communication.model.YxTagVar;
+import com.ht.scada.communication.model.*;
 import com.ht.scada.communication.util.ChannelFrameFactory;
 import com.ht.scada.communication.util.ChannelFrameFactory.IEC104Frame;
 import com.ht.scada.communication.util.CommUtil;
 import com.ht.scada.communication.util.DataValueUtil;
 import com.ht.scada.communication.util.PortInfoFactory;
 import com.ht.scada.communication.util.PortInfoFactory.TcpIpInfo;
+import io.netty.channel.EventLoop;
+import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,14 +29,14 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
  * IEC104规约采集通道<br>
  * <pre>
- *     启动采集后本程序将自动创建一个线程并在线程是循环执行采集。
+ *     启动采集后本程序将自动创建一个线程并在线程里循环执行采集。
  * </pre>
  * <pre>
  *     通讯帧配置时总召唤的帧间隔请设置为0，历史数据召唤的帧间隔请结合RTU的历史数据存储周期进行设置。
@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 public class IEC104Channel extends CommunicationChannel {
     private static final Logger log = LoggerFactory.getLogger(IEC104Channel.class);
 
-    private int realtimeDataInterval = 10;// 实时数据更新间隔
+    private int realtimeDataInterval = 5;// 实时数据更新间隔
     private final int historyDataInterval = 60;
 
     private volatile boolean running = false;
@@ -55,8 +55,8 @@ public class IEC104Channel extends CommunicationChannel {
     private IEC104Master master;
 
     private IEC104Channel.MyMasterHandler masterHandler;
-    private ScheduledExecutorService executorService;
-    //private EventLoop executorService;
+    //private ScheduledExecutorService executorService;
+    private EventLoop executorService;
 
     public IEC104Channel(ChannelInfo channel, List<EndTagWrapper> endTagList) throws Exception {
         super(channel, endTagList);
@@ -97,13 +97,13 @@ public class IEC104Channel extends CommunicationChannel {
 
         if (master != null) {
             running = true;
+
+            //executorService = Executors.newSingleThreadScheduledExecutor();
+            executorService = CommunicationManager.getInstance().getNioEventLoopGroup().next();
             master.open();
 
-            executorService = Executors.newSingleThreadScheduledExecutor();
-            //executorService = eventLoopGroup.next();
-
             /** 定时执行数据召唤 **/
-            for (final IEC104Frame frame: frameList) { // 历史数据召唤不在此处执行
+            for (final IEC104Frame frame: frameList) { // 只需要执行一次的召唤和历史数据召唤不在此处执行
                 if (frame.interval > 0 && frame.ti != TiConst.CALL_HIS_DAT) {
                     // 按召唤间隔执行数据召唤
                     executorService.scheduleAtFixedRate(new Runnable() {
@@ -126,12 +126,13 @@ public class IEC104Channel extends CommunicationChannel {
             }, realtimeDataInterval, realtimeDataInterval, TimeUnit.SECONDS);
 
             // 定时更新历史数据库
-            executorService.scheduleAtFixedRate(new Runnable() {
-                @Override
-                public void run() {
-                    persistHistoryData();
-                }
-            }, historyDataInterval, historyDataInterval, TimeUnit.SECONDS);
+            // TODO 暂时不写历史数据
+//            executorService.scheduleAtFixedRate(new Runnable() {
+//                @Override
+//                public void run() {
+//                    persistHistoryData();
+//                }
+//            }, historyDataInterval, historyDataInterval, TimeUnit.SECONDS);
         }
     }
 
@@ -193,6 +194,7 @@ public class IEC104Channel extends CommunicationChannel {
                     }
                     return true;
                 }
+
             });
             forEachYcTagVar(master.getSlaveID(), new DataHandler<YcTagVar>() {
                 @Override
@@ -224,24 +226,74 @@ public class IEC104Channel extends CommunicationChannel {
                     } else {// 单个的遥测变量
                         if (sq) {// 连续的地址
                             int i = var.tpl.getDataId() - infoID[0];
-                            if (i >= 0 && i < value.length) {
-                                DataType dataType = var.getTpl().getDataType();
-                                float v = Float.NaN;//.calcValue(value[i]);
-                                if (dataType == DataType.INT16) {
-                                    v = var.calcValue(value[i]);
-                                } else if (dataType == DataType.INT32 && i + 1 < value.length) {
-                                    v = var.calcValue((value[i] << 16) + value[i + 1]);
-                                } else if (dataType == DataType.BYTE_H) {
-                                    v = var.calcValue(value[i] >> 8);
-                                } else if (dataType == DataType.BYTE_L) {
-                                    v = var.calcValue(value[i] & 0xFF);
-                                }
+                            DataType dataType = var.getTpl().getDataType();
+                            float v = Float.NaN;//.calcValue(value[i]);
 
-                                if (!Float.isNaN(v)) {
-                                    Calendar cal = datetime[i];
-                                    String key = CommUtil.createRTUHisDataKey(varGroup, cal, interval);
-                                    model.addRTUYcHisData(var, key, cal.getTime(), v);
-                                }
+                            switch (dataType) {
+                                case INT16:
+                                    if (i >= 0 && i < value.length) {
+                                        v = var.calcValue((short)value[i]);
+                                    }
+                                    break;
+                                case UINT16:
+                                    if (i >= 0 && i < value.length) {
+                                        v = var.calcValue(value[i] & 0xFFFF);
+                                    }
+                                    break;
+                                case INT32:
+                                    if (i >= 0 && i < value.length) {
+                                        int rawValue = (var.getRawValue() & 0xFFFF) | (value[i] << 16);
+                                        var.setRawValue(rawValue);
+                                        v = var.calcValue(rawValue);
+                                    }
+                                    if (i + 1 >= 0 && i + 1 < value.length) {
+                                        int rawValue = (var.getRawValue() & 0xFFFF0000) | value[i + 1];
+                                        var.setRawValue(rawValue);
+                                        v = var.calcValue(rawValue);
+                                    }
+                                    break;
+                                case UINT32:
+                                    if (i >= 0 && i < value.length) {
+                                        int rawValue = (var.getRawValue() & 0xFFFF) | (value[i] << 16);
+                                        var.setRawValue(rawValue);
+                                        v = var.calcValue(rawValue);
+                                    }
+                                    if (i + 1 >= 0 && i + 1 < value.length) {
+                                        int rawValue = (var.getRawValue() & 0xFFFF0000) | value[i + 1];
+                                        var.setRawValue(rawValue);
+                                        v = var.calcValue(rawValue);
+                                    }
+                                    break;
+                                case MOD1000:// 高字节*1000+低字节/10
+                                    if (i >= 0 && i < value.length) {
+                                        int rawValue = (var.getRawValue() & 0xFFFF) + (value[i] << 16);
+                                        var.setRawValue(rawValue);
+                                        float f = (var.getRawValue() & 0xFFFF) / 10F + (var.getRawValue() >> 16) * 1000;
+                                        v = var.calcValue(f);
+                                    }
+                                    if (i + 1 >= 0 && i + 1 < value.length) {
+                                        int rawValue = (var.getRawValue() & 0xFFFF0000) + value[i + 1];
+                                        var.setRawValue(rawValue);
+                                        float f = (var.getRawValue() & 0xFFFF) / 10F + (var.getRawValue() >> 16) * 1000;
+                                        v = var.calcValue(f);
+                                    }
+                                    break;
+                                case BYTE_H:
+                                    if (i >= 0 && i < value.length) {
+                                        v = var.calcValue(value[i] >> 8);
+                                    }
+                                    break;
+                                case BYTE_L:
+                                    if (i >= 0 && i < value.length) {
+                                        v = var.calcValue(value[i] & 0xFF);
+                                    }
+                                    break;
+                            }
+
+                            if (!Float.isNaN(v)) {
+                                Calendar cal = datetime[i];
+                                String key = CommUtil.createRTUHisDataKey(varGroup, cal, interval);
+                                model.addRTUYcHisData(var, key, cal.getTime(), v);
                             }
                         } else {// 非连续的地址
                             DataType dataType = var.getTpl().getDataType();
@@ -256,25 +308,17 @@ public class IEC104Channel extends CommunicationChannel {
                                     }
                                 }
                             } else if (dataType == DataType.INT32) {
-                                boolean hget = false;
-                                boolean lget = false;
-                                int h = -1;
-                                int l = -1;
                                 for (int i = 0; i < infoID.length; i++) {
-                                    if (infoID[i] == var.tpl.getDataId()) {
-                                        cal = datetime[i];
-                                        h = value[i];
-                                        hget = true;
-                                    } else if (infoID[i] == var.tpl.getDataId() + 1) {
-                                        l = value[i];
-                                        lget = true;
+                                    if (infoID[i] == var.getTpl().getDataId()) {// 高Word
+                                        int rawValue = (var.getRawValue() & 0xFFFF) | (value[i] << 16);
+                                        var.setRawValue(rawValue);
+                                        v = var.calcValue(rawValue);
+                                    } else if (infoID[i] == var.getTpl().getDataId() + 1) {// 低Word
+                                        int rawValue = (var.getRawValue() & 0xFFFF0000) + value[i];
+                                        var.setRawValue(rawValue);
+                                        v = var.calcValue(rawValue);
+                                        return true;
                                     }
-                                    if (lget && hget) {
-                                        break;
-                                    }
-                                }
-                                if (lget && hget) {
-                                    v = var.calcValue((h << 16) + l);
                                 }
                             } else if (dataType == DataType.BYTE_H) {
                                 for (int i = 0; i < infoID.length; i++) {
@@ -375,7 +419,8 @@ public class IEC104Channel extends CommunicationChannel {
                 @Override
                 public boolean each(EndTagWrapper model, YxTagVar var) {
 
-                    if (var.getTpl().getBitOffset() >= 0) {// 遥测转遥信变量
+                    // 遥测转遥信变量不在此进行处理
+                    if (var.getTpl().getBitOffset() >= 0) {
                         return true;
                     }
                     VarGroupEnum varGroup = var.tpl.getVarGroup();
@@ -453,7 +498,7 @@ public class IEC104Channel extends CommunicationChannel {
      */
     private void handleYcFrame(final Date date) {
 
-        //log.debug("{}:本次召唤累计返回{}个遥测帧", channel.getName(), master.getYcFrameQueue().size());
+        log.debug("{}:本次召唤累计返回{}个遥测帧", channel.getName(), master.getYcFrameQueue().size());
 
         IEC104IFrame frame;
         while ((frame = master.getYcFrameQueue().poll()) != null) {
@@ -461,6 +506,7 @@ public class IEC104Channel extends CommunicationChannel {
             final int[] infoID = frame.infoID;
             final int[] value = frame.getYcValue();
             final boolean sq = frame.sq;
+            log.debug("infoID:{}", infoID);
 
             forEachYc2YxTagVar(master.getSlaveID(), new DataHandler<YxTagVar>() {
                 @Override
@@ -480,6 +526,34 @@ public class IEC104Channel extends CommunicationChannel {
                                 return true;
                             }
                         }
+                    }
+                    return true;
+                }
+            });
+
+            forEachAsciiTagVar(master.getSlaveID(), new DataHandler<AsciiTagVar>() {
+                @Override
+                public boolean each(EndTagWrapper model, AsciiTagVar var) {
+                    if (sq) {// 连续的地址
+                        int index = var.getTpl().getDataId() - infoID[0];
+                        for (int i = 0; i < var.getTpl().getByteLen(); i++) {
+                            int j = index + (i / 2);
+                            if (j >= 0 && j < value.length) {
+                                if (i % 2 == 0) {// 低字节
+                                    byte b = (byte) (value[index] & 0xFF);
+                                    var.getRawValue()[i] = b;
+                                } else {// 高字节
+                                    byte b = (byte) (value[index] >> 8);
+                                    var.getRawValue()[i] = b;
+                                }
+                            }
+                            if ( j >= value.length) {
+                                return true;
+                            }
+                        }
+                        var.update(date);
+                    } else {// 非连续的地址
+                        // TODO: 暂不支持
                     }
                     return true;
                 }
@@ -508,31 +582,58 @@ public class IEC104Channel extends CommunicationChannel {
                         } else {// 单个遥测
                             int i = var.getTpl().getDataId() - infoID[0];
                             DataType dataType = var.getTpl().getDataType();
-                            if (dataType == DataType.INT16) {
-                                if (i >= 0 && i < value.length) {
-                                    var.update(value[i], date);
+                            switch (dataType) {
+                                case INT16:
+                                    if (i >= 0 && i < value.length) {
+                                        var.update(value[i], date);
+                                        return true;
+                                    }
+                                    break;
+                                case INT32:// 高字在前，低字在后
+                                    if (i >= 0 && i < value.length) {
+                                        int rawValue = (var.getRawValue() & 0xFFFF) | (value[i] << 16);
+                                        var.setRawValue(rawValue);
+                                        var.update(rawValue, date);
+                                    }
+                                    if (i + 1 >= 0 && i + 1 < value.length) {
+                                        int rawValue = (var.getRawValue() & 0xFFFF0000) | value[i + 1];
+                                        var.setRawValue(rawValue);
+                                        var.update(rawValue, date);
+                                    }
                                     return true;
-                                }
-                            } else if (dataType == DataType.INT32) {// 高字在前，低字在后
-                                if (i >= 0 && i + 1 < value.length) {
-                                    var.update((value[i] << 16) + value[i + 1], date);
+                                case BYTE_H:
+                                    if (i >= 0 && i < value.length) {
+                                        var.update(value[i] >> 8, date);
+                                        return true;
+                                    }
+                                    break;
+                                case BYTE_L:
+                                    if (i >= 0 && i < value.length) {
+                                        var.update(value[i] & 0xFF, date);
+                                        return true;
+                                    }
+                                    break;
+                                case MOD1000:// 高字节*1000+低字节/10
+                                    if (i >= 0 && i < value.length) {
+                                        int rawValue = (var.getRawValue() & 0xFFFF) + (value[i] << 16);
+                                        var.setRawValue(rawValue);
+                                        float f = (var.getRawValue() & 0xFFFF) / 10F + (var.getRawValue() >> 16) * 1000;
+                                        var.update(f, date);
+                                    }
+                                    if (i + 1 >= 0 && i + 1 < value.length) {
+                                        int rawValue = (var.getRawValue() & 0xFFFF0000) + value[i + 1];
+                                        var.setRawValue(rawValue);
+                                        float f = (var.getRawValue() & 0xFFFF) / 10F + (var.getRawValue() >> 16) * 1000;
+                                        var.update(f, date);
+                                    }
                                     return true;
-                                }
-                            } else if (dataType == DataType.BYTE_H) {// 高字节
-                                if (i >= 0 && i < value.length) {
-                                    var.update(value[i] >> 8, date);
-                                    return true;
-                                }
-                            } else if (dataType == DataType.BYTE_L) {// 低字节
-                                if (i >= 0 && i < value.length) {
-                                    var.update(value[i] & 0xFF, date);
-                                    return true;
-                                }
+
                             }
                         }
-                    } else {
+                    } else {// 非连续
                         if (var.tpl.getVarType() == VarTypeEnum.YC) {
                             DataType dataType = var.getTpl().getDataType();
+
                             if (dataType == DataType.INT16) {
                                 for (int i = 0; i < infoID.length; i++) {
                                     if (infoID[i] == var.tpl.getDataId()) {
@@ -541,21 +642,16 @@ public class IEC104Channel extends CommunicationChannel {
                                     }
                                 }
                             } else if (dataType == DataType.INT32) {// 高字在前，低字在后
-                                boolean hget = false;
-                                boolean lget = false;
-                                int h = -1;
-                                int l = -1;
                                 for (int i = 0; i < infoID.length; i++) {
-                                    if (infoID[i] == var.getTpl().getDataId()) {
-                                        h = value[i];
-                                        hget = true;
-                                    } else if (infoID[i] == var.getTpl().getDataId() + 1) {
-                                        l = value[i];
-                                        lget = true;
-                                    }
+                                    if (infoID[i] == var.getTpl().getDataId()) {// 高Word
 
-                                    if (hget && lget) {
-                                        var.update((h << 16) | l, date);
+                                        int rawValue = (var.getRawValue() & 0xFF) + (value[i] << 16);
+                                        var.setRawValue(rawValue);
+                                        var.update(rawValue, date);
+                                    } else if (infoID[i] == var.getTpl().getDataId() + 1) {// 低Word
+                                        int rawValue = (var.getRawValue() & 0xFF00) + value[i];
+                                        var.setRawValue(rawValue);
+                                        var.update(rawValue, date);
                                         return true;
                                     }
                                 }
@@ -575,6 +671,29 @@ public class IEC104Channel extends CommunicationChannel {
                                 }
                             }
                         }
+                    }
+                    return true;
+                }
+            });
+
+            forEachYcArrayTagVar(master.getSlaveID(), new DataHandler<YcTagVar>() {
+                @Override
+                public boolean each(EndTagWrapper model, YcTagVar var) {
+                    if (sq) { // 处理示功图、谐波等数组数据
+                        int startID = var.tpl.getDataId();
+                        int len = var.getLastArrayValue().length;
+                        if (startID > infoID[infoID.length - 1]
+                                || startID + len <= infoID[0]) {
+                            return true;
+                        }
+                        for (int i = 0; i < value.length; i++) {
+                            int offset = infoID[i] - startID;
+                            if (offset >= 0 && offset < len) {
+                                var.updateArrayValue(value[i], offset);
+                            }
+                        }
+                    } else {// 非连续
+                        // TODO 暂不支持遥测数组
                     }
                     return true;
                 }
@@ -600,19 +719,28 @@ public class IEC104Channel extends CommunicationChannel {
 
                 @Override
                 public boolean each(EndTagWrapper model, YxTagVar var) {
-                    if (var.getTpl().getBitOffset() >= 0) {// 遥测转遥信变量
+                    // 遥测转遥信变量不在此进行处理
+                    if (var.getTpl().getBitOffset() >= 0) {
                         return true;
                     }
                     if (sq) {// 连续的地址
                         int index = var.tpl.getDataId() - infoID[0];
                         if (index >= 0 && index < value.length) {
                             var.update(value[index], date);
+                            // 触发采集
+                            if (value[index] && var.getTpl().getTriggerName() != null) {
+                                exeTrigger(var.getTpl().getTriggerName());
+                            }
                             return true;
                         }
                     } else {// 非连续的地址
                         for (int i = 0; i < infoID.length; i++) {
                             if (infoID[i] == var.tpl.getDataId()) {
                                 var.update(value[i], date);
+                                // 触发采集
+                                if (value[i] && var.getTpl().getTriggerName() != null) {
+                                    exeTrigger(var.getTpl().getTriggerName());
+                                }
                                 return true;
                             }
                         }
@@ -623,38 +751,98 @@ public class IEC104Channel extends CommunicationChannel {
         }
     }
 
-    @Override
-    public boolean exeYK(int deviceAddr, final int dataID, final boolean status) {
-        MyYKHandler ykHandler = new MyYKHandler(dataID, status);
-        final long endTime = ykHandler.getEndTime();
-        master.startYK(ykHandler);
-
-        while (ykHandler.getRet() < 0 && endTime > System.currentTimeMillis()) {
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                break;
+    private int manualCall = -1;
+    /**
+     * 手动召唤数据. 可用于实时召唤功图数据
+     * @param trigger 被触发的帧的名称
+     */
+    public void exeTrigger(final String trigger) {
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                for (IEC104Frame frame : frameList) {
+                    if (trigger.equals(frame.name)) {
+                        manualCall = frame.ti;
+                        master.call(frame.ti);
+                        break;
+                    }
+                }
             }
-        }
-
-        return ykHandler.getRet() == 1;
+        });
     }
 
     @Override
-    public boolean exeYT(int deviceAddr, int dataID, int value) {
-        MyYTHandler ytHandler = new MyYTHandler(dataID, value);
-        final long endTime = ytHandler.getEndTime();
-        master.startYT(ytHandler);
+    public boolean exeYK(final String endCode, final String varName, final boolean value) {
+    //public boolean exeYK(int deviceAddr, final int dataID, final boolean status) {
+        try {
+            TagVar var = executorService.schedule(new Callable<TagVar>() {
+                @Override
+                public TagVar call() throws Exception {
+                    return getYkVar(endCode, varName);  //To change body of implemented methods use File | Settings | File Templates.
+                }
+            },0,TimeUnit.MILLISECONDS).get();
 
-        while (ytHandler.getRet() < 0 && endTime > System.currentTimeMillis()) {
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                break;
+            if (var == null) {
+                log.warn("遥控变量未找到, {}:{}", endCode, varName);
+                return false;
             }
+            int dataID = var.getTpl().getDataId();
+
+            MyYKHandler ykHandler = new MyYKHandler(dataID, value);
+            final long endTime = ykHandler.getEndTime();
+            master.startYK(ykHandler);
+
+            while (ykHandler.getRet() < 0 && endTime > System.currentTimeMillis()) {
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+
+            return ykHandler.getRet() == 1;
+        } catch (InterruptedException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        } catch (ExecutionException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
 
-        return ytHandler.getRet() == 1;
+        return false;
+    }
+
+    @Override
+    public boolean exeYT(final String endCode, final String varName, final int value) {
+        //public boolean exeYK(int deviceAddr, final int dataID, final boolean status) {
+        try {
+            TagVar var = executorService.schedule(new Callable<TagVar>() {
+                @Override
+                public TagVar call() throws Exception {
+                    return getYtVar(endCode, varName);  //To change body of implemented methods use File | Settings | File Templates.
+                }
+            },0,TimeUnit.MILLISECONDS).get();
+
+            int dataID = var.getTpl().getDataId();
+
+            MyYTHandler ytHandler = new MyYTHandler(dataID, value);
+            final long endTime = ytHandler.getEndTime();
+            master.startYT(ytHandler);
+
+            while (ytHandler.getRet() < 0 && endTime > System.currentTimeMillis()) {
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+
+            return ytHandler.getRet() == 1;
+        } catch (InterruptedException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        } catch (ExecutionException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+
+        return false;
     }
 
     private List<VarGroupEnum> getVarGroupByTi(int ti) {
@@ -666,7 +854,7 @@ public class IEC104Channel extends CommunicationChannel {
             case TiConst.CALL_YC_YX:
                 return Arrays.asList(VarGroupEnum.DIAN_YC, VarGroupEnum.YOU_JING, VarGroupEnum.SHUI_JING,
                         VarGroupEnum.RTU_ZHUANG_TAI, VarGroupEnum.SENSOR_RUN,
-                        VarGroupEnum.ZYZ_YC, VarGroupEnum.ZSZ_YC, VarGroupEnum.LHZ_YC);
+                        VarGroupEnum.ZYZ_YC, VarGroupEnum.ZSZ_YC, VarGroupEnum.LHZ_YC, VarGroupEnum.QI_TA);
             case TiConst.CALL_YM:// 电度
                 return Arrays.asList(VarGroupEnum.DIAN_YM);
             case TiConst.CALL_XB:// 谐波
@@ -683,6 +871,7 @@ public class IEC104Channel extends CommunicationChannel {
                 return Arrays.asList(VarGroupEnum.ZHU_CAI);
             case TiConst.CALL_RTU_CFG:// RTU参数
             case TiConst.CALL_SENSOR_CFG:// 传感器参数
+                return Arrays.asList(VarGroupEnum.CAN_SHU_DEVICE);
             default:
                 break;
         }
@@ -695,11 +884,12 @@ public class IEC104Channel extends CommunicationChannel {
         private int infoID;
         private int value;
         private long endTime;
+        private String message;
 
         private MyYTHandler(int infoID, int value) {
             this.infoID = infoID;
             this.value = value;
-            endTime = System.currentTimeMillis() + 3000;
+            endTime = System.currentTimeMillis() + 5000;
         }
 
         @Override
@@ -719,12 +909,17 @@ public class IEC104Channel extends CommunicationChannel {
 
         @Override
         public void onFailure(String message) {
+            this.message = message;
             ret = 0;
         }
 
         @Override
         public void onSuccess() {
             ret = 1;
+        }
+
+        private String getMessage() {
+            return message;
         }
 
         /**
@@ -740,11 +935,12 @@ public class IEC104Channel extends CommunicationChannel {
         private int infoID;
         private boolean value;
         private long endTime;
+        private String message;
 
         private MyYKHandler(int infoID, boolean value) {
             this.infoID = infoID;
             this.value = value;
-            endTime = System.currentTimeMillis() + 3000;
+            endTime = System.currentTimeMillis() + 5000;
         }
 
         @Override
@@ -764,7 +960,12 @@ public class IEC104Channel extends CommunicationChannel {
 
         @Override
         public void onFailure(String msg) {
+            this.message = msg;
             ret = 0;
+        }
+
+        private String getMessage() {
+            return message;
         }
 
         @Override
@@ -810,11 +1011,32 @@ public class IEC104Channel extends CommunicationChannel {
                                 for (VarGroupEnum group : getVarGroupByTi(frame.ti)) {
                                     generateHistoryData(group, date);
                                 }
+                                if (frame.ti == TiConst.CALL_GT) {// 功图召唤完成
+                                    // todo: 通知前端，功图召唤完成
+                                    if (frame.ti == manualCall) {
+                                        manualCall = -1;
+                                        executorService.schedule(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                forEachEndTag(new EndTagHandler() {
+                                                    @Override
+                                                    public boolean each(EndTagWrapper model) {
+                                                        // 功图召唤完成,更新实时数据库,并通知前端
+                                                        DataBaseManager.getInstance().getRealtimeDataService().putValue(model.getEndTag().getCode() + ":MANUAL_GT", LocalDateTime.now().toString("yyyy-MM-dd HH:mm:ss"));
+                                                        return false;  //To change body of implemented methods use File | Settings | File Templates.
+                                                    }
+                                                });
+                                            }
+                                        }, realtimeDataInterval, TimeUnit.SECONDS);
+                                    }
+
+                                }
                             }
                         });
                     }
                     break;
                 }
+
             }
         }
 
@@ -847,35 +1069,33 @@ public class IEC104Channel extends CommunicationChannel {
 
         @Override
         public void onConnect() {
-            forEachEndTag(new EndTagHandler() {
+            channel.setOnLine(true);
+
+            executorService.execute(new Runnable() {
                 @Override
-                public boolean each(EndTagWrapper model) {
-                    model.updateRtuStatus(true, new Date());
-                    return true;  //To change body of implemented methods use File | Settings | File Templates.
-                }
-            });
-            for (final IEC104Frame frame: frameList) {
-                if(frame.ti == TiConst.CALL_HIS_DAT) {// 历史数据召唤
-                    executorService.execute(new Runnable() {
+                public void run() {
+                    forEachEndTag(new EndTagHandler() {
                         @Override
-                        public void run() {
-                            callHistoryData(frame.interval / 60);
+                        public boolean each(EndTagWrapper model) {
+                            model.updateRtuStatus(true, new Date());
+                            return true;  //To change body of implemented methods use File | Settings | File Templates.
                         }
                     });
-                } else if (frame.interval <= 0) {// 只执行1次的数据召唤
-                    executorService.schedule(new Runnable() {
-                        @Override
-                        public void run() {
+                    for (final IEC104Frame frame: frameList) {
+                        if(frame.ti == TiConst.CALL_HIS_DAT) {// 历史数据召唤
+                            callHistoryData(frame.interval / 60);
+                        } else if (frame.interval <= 0) {// 只执行1次的数据召唤
                             master.call(frame.ti);
                         }
-                    }, master.getInterval(), TimeUnit.MILLISECONDS);
+                    }
                 }
-            }
+            });
         }
 
         @Override
         public void onDisconnect() {
-            log.info("连接断开:{}", channel.getName());
+            log.info("连接未建立或断开:{}", channel.getName());
+            channel.setOnLine(false);
             forEachEndTag(new EndTagHandler() {
                 @Override
                 public boolean each(EndTagWrapper model) {
@@ -891,6 +1111,7 @@ public class IEC104Channel extends CommunicationChannel {
         @Override
         public void onSOE(IEC104IFrame frame) {
             final Date date = frame.getTimes()[0].getTime();
+
             executorService.execute(new Runnable() {
                 @Override
                 public void run() {

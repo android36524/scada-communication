@@ -70,7 +70,7 @@
     </div>
 
     <div style="margin: 5px 0;" th:if="${not #lists.isEmpty(dataList)}">
-        <table class="dataintable" style="width: 800px;">
+        <table class="dataintable">
             <tr>
                 <th>日期时间</th>
                 <th th:each="yxVar : ${varGroupWrapper.yxVarList}" th:text="${yxVar.tpl.tagName}"></th>

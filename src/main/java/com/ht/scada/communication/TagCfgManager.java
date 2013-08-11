@@ -1,9 +1,8 @@
 package com.ht.scada.communication;
 
-import com.ht.scada.communication.dao.EndTagDao;
-import com.ht.scada.communication.dao.TagVarTplDao;
-import com.ht.scada.communication.dao.VarGroupInfoDao;
-import com.ht.scada.communication.dao.VarIOInfoDao;
+import com.ht.scada.common.tag.util.DataType;
+import com.ht.scada.common.tag.util.VarGroupEnum;
+import com.ht.scada.communication.dao.*;
 import com.ht.scada.communication.entity.EndTag;
 import com.ht.scada.communication.entity.TagVarTpl;
 import com.ht.scada.communication.entity.VarGroupInfo;
@@ -29,6 +28,7 @@ class TagCfgManager {
     private VarGroupInfoDao varGroupInfoDao;
     private VarIOInfoDao varIOInfoDao;
     private TagVarTplDao tagVarTplDao;
+    private VarGroupDataDao varGroupDataDao;
 
 	private final Map<String, List<TagVarTplWrapper>> tagTplMap = new HashMap<>();
 	private Map<Integer, List<EndTagWrapper>> endTagMap = new ConcurrentHashMap<>(1000);// 采集设备对应的末端列表, key格式为【通道序号】
@@ -39,6 +39,7 @@ class TagCfgManager {
         varGroupInfoDao = DataBaseManager.getInstance().getVarGroupInfoDao();
         varIOInfoDao = DataBaseManager.getInstance().getVarIOInfoDao();
         tagVarTplDao = DataBaseManager.getInstance().getTagVarTplDao();
+        varGroupDataDao = DataBaseManager.getInstance().getVarGroupDataDao();
     }
 
     /**
@@ -92,17 +93,68 @@ class TagCfgManager {
 	 */
 	private void initTpl() {
 		List<TagVarTpl> tpls = tagVarTplDao.getAll();
+        List<TagVarTpl> defaultTpl = new ArrayList<>();
 		for (TagVarTpl tpl : tpls) {
-			List<TagVarTplWrapper> tplWrapperList = tagTplMap.get(tpl.getTplName());
-			if (tplWrapperList == null) {
-				tplWrapperList = new ArrayList<TagVarTplWrapper>();
-				tagTplMap.put(tpl.getTplName(), tplWrapperList);
-			}
-			
-            TagVarTplWrapper wrapper = new TagVarTplWrapper(tpl);
-            tplWrapperList.add(wrapper);
+            if (tpl.getTplName().equals("default")) {
+                defaultTpl.add(tpl);
+            } else {
+                List<TagVarTplWrapper> tplWrapperList = tagTplMap.get(tpl.getTplName());
+                if (tplWrapperList == null) {
+                    tplWrapperList = new ArrayList<TagVarTplWrapper>();
+                    tagTplMap.put(tpl.getTplName(), tplWrapperList);
+                }
+
+                TagVarTplWrapper wrapper = new TagVarTplWrapper(tpl);
+                tplWrapperList.add(wrapper);
+            }
 		}
+        if (!defaultTpl.isEmpty()) {
+            createVarGroupTable(defaultTpl);
+        }
 	}
+
+    private void createVarGroupTable(List<TagVarTpl> defaultTpl) {
+
+        Map<VarGroupEnum, VarGroupTable> varGroupTableMap = new HashMap<>();
+        for (TagVarTpl tpl : defaultTpl) {
+
+            VarGroupTable varGroupTable = varGroupTableMap.get(tpl.getVarGroup());
+            if (varGroupTable == null) {
+                varGroupTable = new VarGroupTable();
+                varGroupTableMap.put(tpl.getVarGroup(), varGroupTable);
+            }
+
+            switch (tpl.getVarType()) {
+                case YX:
+                {
+                    varGroupTable.getYxVarList().add(tpl.getVarName());
+                    break;
+                }
+                case YC:
+                {
+                    varGroupTable.getYcVarList().add(tpl.getVarName());
+                }
+                break;
+                case YM:
+                {
+                    varGroupTable.getYmVarList().add(tpl.getVarName());
+                }
+                break;
+                case QT:
+                    DataType dataType = tpl.getDataType();
+                    if (dataType == DataType.INT16_ARRAY) {//遥测数组变量也加入遥测列表
+                        varGroupTable.getYcArrayVarList().add(tpl.getVarName());
+                    } else if (dataType == DataType.ASCII) {// ASCII类型变量，只存实时库，不存历史库
+                    } else {
+                    }
+                    break;
+            }
+        }
+
+        for (Map.Entry<VarGroupEnum, VarGroupTable> entry : varGroupTableMap.entrySet()) {
+            varGroupDataDao.createGroupTableIfNotExists(entry.getKey(), entry.getValue());
+        }
+    }
 	
 	/**
 	 * 销毁所有内容

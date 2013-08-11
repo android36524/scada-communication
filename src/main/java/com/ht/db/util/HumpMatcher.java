@@ -20,7 +20,7 @@ public class HumpMatcher implements Matcher {
             }
             strBuilder.append(str);
         }
-        return strBuilder.toString().equals(propertyName);
+        return strBuilder.toString().equalsIgnoreCase(propertyName);
     }
 
 }

@@ -3,6 +3,7 @@ package com.ht.scada.communication.entity;
 
 import com.ht.scada.communication.util.CommunicationProtocal;
 
+import javax.persistence.Transient;
 import java.util.Date;
 
 /**
@@ -55,6 +56,9 @@ public class ChannelInfo {
 	 */
 //	@Lob
 	private String frames;
+
+    @Transient
+    private boolean onLine = false;
 
     public int getId() {
         return id;
@@ -126,5 +130,13 @@ public class ChannelInfo {
 
     public void setFrames(String frames) {
         this.frames = frames;
+    }
+
+    public boolean isOnLine() {
+        return onLine;
+    }
+
+    public void setOnLine(boolean onLine) {
+        this.onLine = onLine;
     }
 }

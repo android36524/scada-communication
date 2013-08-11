@@ -21,6 +21,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+/**
+ * 历史数据库服务KV实现
+ */
 public class HistoryDataServiceImpl implements HistoryDataService {
     private static final Logger log = LoggerFactory.getLogger(HistoryDataServiceImpl.class);
 	
@@ -101,26 +104,6 @@ public class HistoryDataServiceImpl implements HistoryDataService {
     }
 
     @Override
-    public List<VarGroupData> getVarGroupDataByDatetimeRange(String code, VarGroupEnum varGroup, Date start, Date end) {
-        List<VarGroupData> list = new ArrayList<>();
-
-        final String startTimestamp = LocalDateTime.fromDateFields(start).toString();
-        final String endTimestamp = LocalDateTime.fromDateFields(end).toString();
-
-        KeyRange keyRange = new KeyRange(startTimestamp /*start*/, true /*startInclusive*/,
-                endTimestamp /*end*/, false /*endInclusive*/);
-
-        final Map<Key, ValueVersion> results = store.multiGet(KeyDefinition.getVarGroupKey(code, varGroup.toString()), keyRange, Depth.CHILDREN_ONLY);
-        for (Map.Entry<Key, ValueVersion> entry : results.entrySet()) {
-            VarGroupData data = new VarGroupData();
-            data.parseKey(entry.getKey());
-            data.parseValue(entry.getValue().getValue());
-            list.add(data);
-        }
-        return list;
-    }
-
-    @Override
     public long getVarGroupDataCount(String code, VarGroupEnum varGroup, Date start, Date end) {
         String startTimestamp = LocalDateTime.fromDateFields(start).toString();
         String endTimestamp = LocalDateTime.fromDateFields(end).toString();
@@ -166,27 +149,6 @@ public class HistoryDataServiceImpl implements HistoryDataService {
             i++;
         }
         return list;
-    }
-
-    @Override
-    public VarGroupData getVarGroupData(String code, VarGroupEnum varGroup, Date start) {
-
-        String startTimestamp = LocalDateTime.fromDateFields(start).toString();
-
-        KeyRange keyRange = new KeyRange(startTimestamp /*start*/, true /*startInclusive*/,
-                null /*end*/, false /*endInclusive*/);
-
-        Key parentKey = KeyDefinition.getVarGroupKey(code, varGroup.toString());
-        Iterator<KeyValueVersion> keyValueVersionIterator = store.multiGetIterator(Direction.FORWARD, 1, KeyDefinition.getVarGroupKey(code, varGroup.toString()), keyRange, Depth.CHILDREN_ONLY);
-
-        VarGroupData data = new VarGroupData();
-        while (keyValueVersionIterator.hasNext()) {
-            KeyValueVersion keyValueVersion = keyValueVersionIterator.next();
-            data.parseKey(keyValueVersion.getKey());
-            data.parseValue(keyValueVersion.getValue());
-            break;
-        }
-        return data;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
 }

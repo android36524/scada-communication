@@ -8,7 +8,6 @@ import com.ht.scada.common.tag.util.VarGroupEnum;
 import com.ht.scada.common.tag.util.VarSubTypeEnum;
 import com.ht.scada.common.tag.util.VarTypeEnum;
 import com.ht.scada.communication.dao.ChannelInfoDao;
-import com.ht.scada.communication.dao.VarGroupDataDao;
 import com.ht.scada.communication.entity.*;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
@@ -25,17 +24,58 @@ public class Test {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws InterruptedException, IOException {
-        //dbCreateData();
-        //historyServiceTest();
-        //realTimeServiceTest();
-        System.out.println(UUID.randomUUID().toString());
-        System.out.println(UUID.randomUUID().toString().length());
-
+        String s = LocalDateTime.now().toString("yyyy-MM-dd HH:mm:ss");
+        System.out.println(s);
         System.out.println(new DecimalFormat("#").format(Float.MAX_VALUE));
         System.out.println(LocalDate.parse("1922-6-12").getMonthOfYear());
         System.out.println(LocalDate.parse("1922-06-12").getMonthOfYear());
+        int i = -1;
+        System.out.println(0x8FFF0001);
+        System.out.println(0x8FFF0000 | 0x0001);
+        System.out.println((i & 0xFF));// 255
+        System.out.println((byte)(i & 0xFF));// -1
+        System.out.println((int)(byte)(i & 0xFF));// -1
+
+        StringBuilder sqlBuilder = new StringBuilder();
+        sqlBuilder.append("CREATE TABLE `T_GroupTest2` (");
+        sqlBuilder.append("`id` INT(10) NOT NULL, \n");
+        sqlBuilder.append("`ia` FLOAT NULL,\n");
+        sqlBuilder.append("`ib` FLOAT NULL,\n");
+        sqlBuilder.append("`ic` FLOAT NULL,\n");
+        sqlBuilder.append("`ua` FLOAT NULL,\n");
+        sqlBuilder.append("`ub` FLOAT NULL,\n");
+        sqlBuilder.append("`yx` TINYINT NULL,\n");
+        sqlBuilder.append("`code` VARCHAR(50) NULL,\n");
+        sqlBuilder.append("`datetime` DATETIME NULL,\n");
+        sqlBuilder.append("PRIMARY KEY (`id`)\n");
+        sqlBuilder.append(")");
+        DataBaseManager.getInstance().init();
+        //System.out.println(sqlBuilder.toString());
+        //DataBaseManager.getInstance().getDbTemplate().update(sqlBuilder.toString());
+        List<Map<String, Object>> dataList = DataBaseManager.getInstance().getDbTemplate().find("select * from t_dian_yc");
+
+        for (Map<String, Object> map : dataList) {
+            System.out.println(map);
+
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                System.out.println(entry.getKey());
+                if (entry.getValue() != null)
+                System.out.println(entry.getValue().getClass());
+            }
+            System.out.println();
+        }
+
+/*        DataBaseManager.getInstance().init();
+        List<VarGroupData> list =  DataBaseManager.getInstance().getHistoryDataService()
+                .getVarGroupData("y93p5", VarGroupEnum.DIAN_YM,
+                        LocalDateTime.now().minusHours(1).toDate(), LocalDateTime.now().toDate(), 0, 10);
+        System.out.println(list.size());
+        for (VarGroupData varGroupData : list) {
+            System.out.println(varGroupData.getYmValueMap().size());
+        }*/
 
         //Config.INSTANCE.init("src/main/webapp/WEB-INF/config.properties");
+/*
         DataBaseManager.getInstance().init();
 
         VarGroupDataDao varGroupDataDao = DataBaseManager.getInstance().getVarGroupDataDao();
@@ -52,6 +92,7 @@ public class Test {
         long l = varGroupDataDao.getCount("code_001", VarGroupEnum.DIAN_YC, LocalDate.now().toDate(), LocalDate.now().plusDays(1).toDate());
         System.out.println(l);
         varGroupDataDao.findByCodeAndDatetime("code_001", VarGroupEnum.DIAN_YC, LocalDate.now().toDate(), LocalDate.now().plusDays(1).toDate(), 0, 10);
+*/
 
 //        Config.INSTANCE.init("src/main/webapp/WEB-INF/config.properties");
 //        DataBaseManager.getInstance().init();
@@ -100,12 +141,6 @@ public class Test {
 //        //data.setYmValueMap(map);
 //        DataBaseManager.getInstance().getHistoryDataService().saveVarGroupData(Arrays.asList(data));
 
-        List<VarGroupData> list =  DataBaseManager.getInstance().getHistoryDataService().getVarGroupDataByDatetimeRange("001", VarGroupEnum.DIAN_YC, LocalDate.now().toDate(), LocalDate.now().plusDays(1).toDate());
-        System.out.println(list.size());
-        for (VarGroupData data : list) {
-            System.out.println(LocalDateTime.fromDateFields(data.getDatetime()).toString());
-            System.out.println(data.getYcValueMap());
-        }
     }
 
     private static void ttt(int i) {

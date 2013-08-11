@@ -47,7 +47,7 @@ public class GTVGApplication {
     
     
     private static Map<String, IGTVGController> initializeControllersByURL() {
-        
+
         controllersByURL = new HashMap<String, IGTVGController>();
         controllersByURL.put("/", new HomeController());
         controllersByURL.put("/main/edit", new EditController());

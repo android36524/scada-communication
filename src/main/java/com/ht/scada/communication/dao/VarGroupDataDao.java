@@ -1,6 +1,7 @@
 package com.ht.scada.communication.dao;
 
 import com.ht.scada.common.tag.util.VarGroupEnum;
+import com.ht.scada.communication.VarGroupTable;
 import com.ht.scada.communication.entity.VarGroupData;
 
 import java.util.Date;
@@ -28,6 +29,8 @@ public interface VarGroupDataDao extends BaseDao<VarGroupData> {
      */
     List<Map<String, Object>> findByCodeAndDatetime(String code, VarGroupEnum varGroup, Date start, Date end, int skip, int limit);
 
+    void createGroupTableIfNotExists(VarGroupEnum varGroup, VarGroupTable varGroupTable);
+
     /**
      * 查询某监控对象在指定时间范围内的记录总数，用于分页查询
      * @param code
@@ -36,5 +39,7 @@ public interface VarGroupDataDao extends BaseDao<VarGroupData> {
      * @param end
      * @return
      */
-    public long getCount(String code, VarGroupEnum varGroup, Date start, Date end);
+    long getCount(String code, VarGroupEnum varGroup, Date start, Date end);
+
+    List<VarGroupData> getVarGroupData(String code, VarGroupEnum varGroup, Date start, Date end, int skip, int limit);
 }

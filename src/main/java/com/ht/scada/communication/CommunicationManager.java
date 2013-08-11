@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class CommunicationManager implements IService {
 	
@@ -33,7 +34,7 @@ public class CommunicationManager implements IService {
     /**
      * 通道序号与采集通道之间的映射
      */
-    private final Map<Integer, CommunicationChannel> channelMap = new HashMap<>(1000);
+    private final Map<Integer, CommunicationChannel> channelMap = new ConcurrentHashMap<>(1000);
 
     /**
      * 服务运行状态
@@ -66,7 +67,7 @@ public class CommunicationManager implements IService {
         stopAllChannel();
 		channelMap.clear();
         TagCfgManager.getInstance().destroy();
-        nioEventLoopGroup.shutdown();
+        nioEventLoopGroup.shutdownGracefully();
 	}
 
     public void startAllChannel() {
@@ -107,7 +108,7 @@ public class CommunicationManager implements IService {
         log.info("启动服务");
         try {
             if (nioEventLoopGroup != null && !nioEventLoopGroup.isShutdown()) {
-                nioEventLoopGroup.shutdown();
+                nioEventLoopGroup.shutdownGracefully();
             }
             nioEventLoopGroup = new NioEventLoopGroup();
             init();
@@ -134,29 +135,34 @@ public class CommunicationManager implements IService {
 	 */
 	private void initChannels() throws Exception {
         channels = channelInfoDao.getAll();
+        /*************** test ***************/
+        // TODO: 测试用通道,正式发布时删除
+        ChannelInfo channelInfo = channels.get(0);
+        for (int i=6; i < 1000; i++) {
+            ChannelInfo c = new ChannelInfo();
+            c.setName("RTU-" + i);
+            c.setFrames(channelInfo.getFrames());
+            c.setIdx(i + 1);
+            c.setIntvl(channelInfo.getIntvl());
+            c.setOffline(channelInfo.getOffline());
+            c.setPortInfo(channelInfo.getPortInfo());
+            c.setProtocal(channelInfo.getProtocal());
+            channels.add(c);
+            //initChannel(c);
+        }
+        /*************** test end ***************/
+
 		for (ChannelInfo channel : channels) {
 			log.info("初始化采集通道:{}", channel.getName());
 			initChannel(channel);
-//            // TODO: 测试用通道,正式发布时删除
-//            for (int i=2; i < 1000; i++) {
-//                ChannelInfo c = new ChannelInfo();
-//                c.setName(channel.getName() + i);
-//                c.setFrames(channel.getFrames());
-//                c.setIdx(i);
-//                c.setIntvl(channel.getIntvl());
-//                c.setOffline(channel.getOffline());
-//                c.setPortInfo(channel.getPortInfo());
-//                c.setProtocal(channel.getProtocal());
-//                initChannel(c);
-//            }
 		}
 	}
 	
 	private void initChannel(ChannelInfo channel) throws Exception {
 		CommunicationChannel commChannel = null;
-        List<EndTagWrapper> endTagList = TagCfgManager.getInstance().getEndTagWrapperByChannelIdx(channel.getIdx());
+        //List<EndTagWrapper> endTagList = TagCfgManager.getInstance().getEndTagWrapperByChannelIdx(channel.getIdx());
         // TODO : 用于测试，只获取序号是1的通道对应的监控对象
-        //List<EndTagWrapper> endTagList = TagCfgManager.getInstance().getEndTagWrapperByChannelIdx(1);
+        List<EndTagWrapper> endTagList = TagCfgManager.getInstance().getEndTagWrapperByChannelIdx(1);
 		switch (channel.getProtocal()) {
 		case ModbusTCP:
 			commChannel = new ModbusTcpChannel(channel, endTagList);
@@ -181,29 +187,36 @@ public class CommunicationManager implements IService {
 
     /**
      * 执行遥控操作
-     * @param deviceAddr
-     * @param dataID
+     * @param channelIndex
+     * @param endCode
+     * @param varName
      * @param value
      * @return
      */
-    public void exeYK(int channelIndex, int deviceAddr, int dataID, boolean value) {
+    public boolean exeYK(int channelIndex, String endCode, final String varName, boolean value) {
         CommunicationChannel channel = channelMap.get(channelIndex);
         if (channel != null) {
-            channel.exeYK(deviceAddr, dataID, value);
+            return channel.exeYK(endCode, varName, value);
+        } else {
+            return false;
         }
     }
 
     /**
      * 执行遥调操作
-     * @param deviceAddr
-     * @param dataID
+     * @param channelIndex
+     * @param endCode
+     * @param varName
      * @param value
      * @return
      */
-    public void exeYT(int channelIndex, int deviceAddr, int dataID, int value) {
+    public boolean exeYT(int channelIndex, String endCode, final String varName, int value) {
+    //public void exeYT(int channelIndex, int deviceAddr, int dataID, int value) {
         CommunicationChannel channel = channelMap.get(channelIndex);
         if (channel != null) {
-            channel.exeYT(deviceAddr, dataID, value);
+            return channel.exeYT(endCode, varName, value);
+        } else {
+            return false;
         }
     }
 

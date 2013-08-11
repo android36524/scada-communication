@@ -237,16 +237,16 @@ public class ModbusTcpChannel extends CommunicationChannel {
 		}
 	}
 
-	@Override
-	public boolean exeYK(int deviceAddr, int dataID, boolean value) {
+    @Override
+    public boolean exeYK(String endCode, String varName, boolean value) {
         // TODO: Modbus遥控未实现
-		return false;
-	}
+        return false;  //To change body of implemented methods use File | Settings | File Templates.
+    }
 
-	@Override
-	public boolean exeYT(int deviceAddr, int dataID, int value) {
+    @Override
+    public boolean exeYT(String endCode, String varName, int value) {
         // TODO: Modbus遥调未实现
-		return false;
-	}
+        return false;  //To change body of implemented methods use File | Settings | File Templates.
+    }
 
 }

@@ -6,6 +6,12 @@
     <script type="text/javascript" src="../../resources/js/jquery.tools.min.js" th:src="@{/resources/js/jquery.tools.min.js}"></script>
     <link href="../../resources/css/jquery.tools.css" th:href="@{/resources/css/jquery.tools.css}"  rel="stylesheet"/>
     <link href="../../resources/css/style.css" th:href="@{/resources/css/style.css}"  rel="stylesheet"/>
+    <style type="text/css">
+        .short_input {
+            width: 44px;
+        }
+
+    </style>
 </head>
 <body>
 <div class="clear" id="nav">
@@ -24,6 +30,7 @@
         <!--<option th:each="endTagWrapper : commChannel.endTagList" th:value="${endTagWrapper.endTag.name}"-->
                 <!--th:text="${endTagWrapper.endTag.name}" selected="selected">1#油井</option>-->
     <!--</select>-->
+    <!--远程控制：<button onclick="start();">启动</button><button onclick="stop();">停止</button>-->
     <div>
         <a href="#" target="_blank"
                 th:href="@{/gt(channelIdx=${channelIdx},code=${endCode},type='sgt',width=500,height=500)}">示功图</a>
@@ -85,16 +92,97 @@
                         <td th:text="${ymVar.lastYmValue}">111111</td>
                     </tr>
                 </table>
+                <table class="dataintable" th:if="${not #lists.isEmpty(varGroup.asciiTagVarList)}" style="float: left;">
+                    <tr>
+                        <th>ASCII</th> <th>变量值</th>
+                    </tr>
+                    <tr th:each="tagVar : ${varGroup.asciiTagVarList}">
+                        <td th:text="${tagVar.tpl.tagName}">变量名</td>
+                        <td th:text="${tagVar.lastValue}">111111</td>
+                    </tr>
+                </table>
                 <br style="clear: both;" />
             </div>
         </div>
     </div>
 
-    <script type="text/javascript">
+    <table class="dataintable"
+           th:if="${not #lists.isEmpty(endTagWrapper.ykVarList)}"
+           style="margin-top: 10px;">
+        <tr>
+            <th style="width: 100px;">遥控</th> <th>操作</th>
+        </tr>
+        <tr th:each="tagVar : ${endTagWrapper.ykVarList}">
+            <td th:text="${tagVar.tpl.tagName}">变量名</td>
+            <td>
+                <button onclick="yk(this, true)" th:name="${tagVar.tpl.varName}" name="yk">合闸</button>
+                <button onclick="yk(this, false)" th:name="${tagVar.tpl.varName}" name="yk">分闸</button>
+            </td>
+        </tr>
+    </table>
+
+    <table class="dataintable"
+           th:if="${not #lists.isEmpty(endTagWrapper.ytVarList)}"
+           style="margin-top: 10px;">
+        <tr>
+            <th style="width: 100px;">遥调</th> <th>操作</th>
+        </tr>
+        <tr th:each="tagVar : ${endTagWrapper.ytVarList}">
+            <td th:text="${tagVar.tpl.tagName}">变量名</td>
+            <td>
+                <input class="short_input" type="text" th:id="${tagVar.tpl.varName}" />
+                <button onclick="yt(this)" th:name="${tagVar.tpl.varName}" name="varName">设置</button>
+            </td>
+        </tr>
+    </table>
+
+    <script type="text/javascript" th:inline="javascript">
+        /*<![CDATA[*/
+        var BASE_URL = /*[[@{/}]]*/ '/';
+        var channelIdx = /*[[${channelIdx}]]*/ '0';
+        var endCode = /*[[${endCode}]]*/ 'test';
+
         $(function(){
             $(".css-tabs:first").tabs(".css-panes:first > div");
             $("span[name='tooltip']").tooltip();
         });
+        function yk(el, value) {
+            var pass = window.prompt("权限验证：");
+            if (!pass) {
+                return;
+            }
+            $.get(BASE_URL + "yk", {
+                endCode: endCode,
+                channelIdx:channelIdx,
+                password:pass,
+                varName: $(el).attr("name"),
+                value:value
+            }, function(data) {
+                alert(data);
+            });
+        }
+        function yt(el) {
+            var pass = window.prompt("权限验证：");
+            if (!pass) {
+                return;
+            }
+            var varName = $(el).attr("name");
+            var value = $("#"+varName).val();
+            if (value) {
+                $.get(BASE_URL + "yt", {
+                    endCode: endCode,
+                    channelIdx:channelIdx,
+                    password: pass,
+                    varName: varName,
+                    value:value
+                }, function(data) {
+                    alert(data);
+                });
+            } else {
+                alert("请输入正常的数值");
+            }
+        }
+        /*]]>*/
     </script>
 </div>
 </body>

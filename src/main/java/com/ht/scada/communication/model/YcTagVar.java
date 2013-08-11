@@ -24,6 +24,7 @@ public class YcTagVar extends TagVar {
 	private float maxValue = Float.NaN;
 	private float minValue = Float.NaN;
 
+    private int rawValue = 0;// 遥测值原始值, 可用于计算INT32类型的数据
 	private float lastYcValue = Float.NaN;// 当前遥测遥脉值
     private float[] lastArrayValue = null;// 数组数据
 
@@ -99,6 +100,13 @@ public class YcTagVar extends TagVar {
         return value * coefValue + baseValue;
     }
 
+    public int getRawValue() {
+        return rawValue;
+    }
+
+    public void setRawValue(int rawValue) {
+        this.rawValue = rawValue;
+    }
 
     private void handleOffLimits(Date datetime, double value) {
         if (this.offLimitsStorages != null

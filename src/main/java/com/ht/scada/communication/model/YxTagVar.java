@@ -1,7 +1,8 @@
 package com.ht.scada.communication.model;
 
-import com.ht.scada.communication.entity.YxRecord;
+import com.ht.scada.communication.entity.EndTag;
 import com.ht.scada.communication.entity.FaultRecord;
+import com.ht.scada.communication.entity.YxRecord;
 import com.ht.scada.communication.util.StorageFactory.FaultStorage;
 import com.ht.scada.communication.util.StorageFactory.YXStorage;
 
@@ -22,7 +23,7 @@ public class YxTagVar extends TagVar {
 		
 		this.faultStorage = tplInfo.getFaultStorage();
 		this.yxStorage = tplInfo.getYxStorage();
-	}
+    }
 
     public int getLastYxValue() {
         return lastYxValue;
@@ -44,14 +45,14 @@ public class YxTagVar extends TagVar {
         }
         boolean status = lastYxValue == 1;
 
+        EndTag endTag = endTagWrapper.getEndTag();
         if (faultStorage != null) {
             FaultStorage storage = faultStorage;
             FaultRecord lastRecord = lastFaultRecord;
             if (lastRecord == null) {// 第一次初始化变量值
                 if ((storage.flag && status) || (!storage.flag && !status)) {// 报警
-                    FaultRecord record = new FaultRecord(endTagWrapper.getEndTag().getCode(),
-                            tpl.getVarName(), status ? storage.onInfo
-                            : storage.offInfo, status, date);
+                    FaultRecord record = new FaultRecord(endTag.getId(), endTag.getName(), endTag.getCode(),
+                            tpl.getVarName(), tpl.getTagName(), status ? storage.onInfo : storage.offInfo, status, date);
                     endTagWrapper.addFaultRecord(record, storage.pushWnd);// 加入存储列表
                     lastFaultRecord = record;
                 }
@@ -78,8 +79,8 @@ public class YxTagVar extends TagVar {
             // 是否推送消息
             boolean pushMessage = storage.pushWnd && (storage.alarmType == -1 || (storage.alarmType == lastYxValue));
             if (lastRecord == null || lastRecord.getValue() != status) {// 第一次初始化变量
-                YxRecord record = new YxRecord(endTagWrapper.getEndTag().getCode(), tpl.getVarName(),
-                        status ? storage.onInfo : storage.offInfo, status, date);
+                YxRecord record = new YxRecord(endTag.getId(), endTag.getName(), endTag.getCode(),
+                        tpl.getVarName(), tpl.getTagName(), status ? storage.onInfo : storage.offInfo, status, date);
                 endTagWrapper.addYxData(record, pushMessage);// 加入存储列表
                 lastYxRecord = record;
             }

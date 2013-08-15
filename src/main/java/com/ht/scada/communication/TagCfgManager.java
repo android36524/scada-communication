@@ -59,14 +59,30 @@ class TagCfgManager {
 		List<VarGroupInfo> varGroupInfos = varGroupInfoDao.getAll();
 		// 解析末端配置
         endTagList = endTagDao.getAll();
-		
-		Map<Integer, List<VarIOInfo>> ioInfoListMap = new HashMap<>();
+
+        // TODO 测试完删除
+/*        EndTag end = endTagList.get(0);
+        for (int i = 6; i < 2000; i++) {
+            EndTag endTag = new EndTag();
+            endTag.setCode(end.getCode() + "-" + i);
+            endTag.setChannelIdx(i + 1);
+            endTag.setDeviceAddr(end.getDeviceAddr());
+            endTag.setId(end.getId());
+            endTag.setName(end.getName());
+            endTag.setSubType(end.getSubType());
+            endTag.setType(end.getType());
+            endTag.setTplName(end.getTplName());
+            endTagList.add(endTag);
+        }*/
+        // todo:end
+
+        Map<Integer, List<VarIOInfo>> ioInfoListMap = new HashMap<>();
 		// TODO: 如果数据量比较大的话此处可能会产生性能问题，可以考虑把IO信息同步存储到实时数据库中
 		List<VarIOInfo> ioInfoList = varIOInfoDao.getAll();
 		for (VarIOInfo varIOInfo : ioInfoList) {
 			List<VarIOInfo> list = ioInfoListMap.get(varIOInfo.getEndTagId());
 			if (list == null) {
-				list = new LinkedList<>();
+				list = new ArrayList<>();
 				ioInfoListMap.put(varIOInfo.getEndTagId(), list);
 			}
 			list.add(varIOInfo);
@@ -80,7 +96,7 @@ class TagCfgManager {
 				
 				List<EndTagWrapper> endTagWrapperList = endTagMap.get(endTag.getChannelIdx());
 				if (endTagWrapperList == null) {
-					endTagWrapperList = new LinkedList<>();
+					endTagWrapperList = new ArrayList<>();
 					endTagMap.put(endTag.getChannelIdx(), endTagWrapperList);
 				}
 				endTagWrapperList.add(wrapper);

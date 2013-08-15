@@ -2,6 +2,7 @@ package com.ht.scada.communication.dao;
 
 import com.ht.scada.communication.entity.YxRecord;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -11,4 +12,6 @@ import java.util.List;
  * To change this template use File | Settings | File Templates. */
 public interface YxRecordDao extends BaseDao<YxRecord> {
     void insertAll(List<YxRecord> records);
+    long getCount(String code, Date start, Date end);
+    public List<YxRecord> findByDateTime(String code, Date start, Date end, int skip, int limit);
 }

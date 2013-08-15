@@ -18,6 +18,12 @@ public interface VarGroupDataDao extends BaseDao<VarGroupData> {
     void insert(VarGroupData varGroupData);
 
     /**
+     * 批量插入数据
+     * @param varGroupDataList 相同分组的数据
+     */
+    void insertAll(List<VarGroupData> varGroupDataList);
+
+    /**
      * 查询某监控对象在指定时间范围内的分组历史数据
      * @param code 监控对象编辑
      * @param varGroup 变量分组

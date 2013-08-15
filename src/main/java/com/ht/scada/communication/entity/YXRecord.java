@@ -15,6 +15,13 @@ public class YxRecord {
 
     @Id
 	private String id;	// 唯一主键
+
+    @Column(name = "end_id")
+    private int endId;
+    @Column(name = "end_name")
+    private String endName;
+    @Column(name = "tag_name")
+    private String tagName;// 中文名称
 	private String code;// 计量点编号(回路号、井号等)
 	private String name;// 变量名称
 	private String info;
@@ -29,8 +36,11 @@ public class YxRecord {
         this.id = UUID.randomUUID().toString().replace("-", "");
 	}
 
-	public YxRecord(String code, String name, String info, boolean value, Date datetime) {
+	public YxRecord(int endId, String endName, String code, String name, String tagName, String info, boolean value, Date datetime) {
         this.id = UUID.randomUUID().toString().replace("-", "");
+        this.endId = endId;
+        this.endName = endName;
+        this.tagName = tagName;
 		this.code = code;
 		this.name = name;
 		this.info = info;
@@ -52,6 +62,30 @@ public class YxRecord {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public int getEndId() {
+        return endId;
+    }
+
+    public void setEndId(int endId) {
+        this.endId = endId;
+    }
+
+    public String getEndName() {
+        return endName;
+    }
+
+    public void setEndName(String endName) {
+        this.endName = endName;
+    }
+
+    public String getTagName() {
+        return tagName;
+    }
+
+    public void setTagName(String tagName) {
+        this.tagName = tagName;
     }
 
     public String getCode() {

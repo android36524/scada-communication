@@ -1,10 +1,13 @@
 package com.ht.scada.communication.model;
 
-import com.ht.scada.communication.entity.OffLimitsRecord;
 import com.ht.scada.common.tag.util.DataType;
+import com.ht.scada.communication.entity.EndTag;
+import com.ht.scada.communication.entity.OffLimitsRecord;
 import com.ht.scada.communication.util.StorageFactory.OffLimitsStorage;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 public class YcTagVar extends TagVar {
 
@@ -151,6 +154,7 @@ public class YcTagVar extends TagVar {
             }
             this.unResumedRecords.removeAll(resumedRecords);
 
+            EndTag endTag = endTagWrapper.getEndTag();
             // 越下限处理
             for (int i = 0; i < offLimitsStorages.size(); i++) {
                 OffLimitsStorage storage = offLimitsStorages.get(i);
@@ -163,10 +167,9 @@ public class YcTagVar extends TagVar {
                         }
                     }
                     if (!isRecorded) {
-                        OffLimitsRecord record = new OffLimitsRecord(
-                                endTagWrapper.getEndTag().getCode(), tpl.getVarName(),
-                                storage.info, value, storage.threshold,
-                                false, datetime);
+                        OffLimitsRecord record = new OffLimitsRecord(endTag.getId(), endTag.getName(), endTag.getCode(),
+                                tpl.getVarName(), tpl.getTagName(), storage.info,
+                                value, storage.threshold, false, datetime);
                         endTagWrapper.addOffLimitsRecord(record, storage.pushWnd);
                         this.unResumedRecords.add(record);
                     }
@@ -186,9 +189,9 @@ public class YcTagVar extends TagVar {
                     }
                     if (!isRecorded) {
                         OffLimitsRecord record = new OffLimitsRecord(
-                                endTagWrapper.getEndTag().getCode(), tpl.getVarName(),
-                                storage.info, value, storage.threshold,
-                                true, datetime);
+                                endTag.getId(), endTag.getName(), endTag.getCode(),
+                                 tpl.getVarName(), tpl.getTagName(), storage.info,
+                                value, storage.threshold, true, datetime);
                         endTagWrapper.addOffLimitsRecord(record, storage.pushWnd);
                         this.unResumedRecords.add(record);
                     }
@@ -226,6 +229,7 @@ public class YcTagVar extends TagVar {
             }
             this.unResumedRtuRecords.removeAll(resumedRecords);
 
+            EndTag endTag = endTagWrapper.getEndTag();
             // 越下限处理
             for (int i = 0; i < offLimitsStorages.size(); i++) {
                 OffLimitsStorage storage = offLimitsStorages.get(i);
@@ -239,7 +243,8 @@ public class YcTagVar extends TagVar {
                     }
                     if (!isRecorded) {
                         OffLimitsRecord record = new OffLimitsRecord(
-                                endTagWrapper.getEndTag().getCode(), tpl.getVarName(),
+                                endTag.getId(), endTag.getName(), endTag.getCode(),
+                                tpl.getVarName(), tpl.getTagName(),
                                 storage.info, value, storage.threshold,
                                 false, datetime);
                         endTagWrapper.addOffLimitsRecord(record, false);
@@ -261,7 +266,8 @@ public class YcTagVar extends TagVar {
                     }
                     if (!isRecorded) {
                         OffLimitsRecord record = new OffLimitsRecord(
-                                endTagWrapper.getEndTag().getCode(), tpl.getVarName(),
+                                endTag.getId(), endTag.getName(), endTag.getCode(),
+                                tpl.getVarName(), tpl.getTagName(),
                                 storage.info, value, storage.threshold,
                                 true, datetime);
                         endTagWrapper.addOffLimitsRecord(record, false);

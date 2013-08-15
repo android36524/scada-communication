@@ -137,8 +137,8 @@ public class CommunicationManager implements IService {
         channels = channelInfoDao.getAll();
         /*************** test ***************/
         // TODO: 测试用通道,正式发布时删除
-        ChannelInfo channelInfo = channels.get(0);
-        for (int i=6; i < 1000; i++) {
+/*        ChannelInfo channelInfo = channels.get(0);
+        for (int i=6; i < 2000; i++) {
             ChannelInfo c = new ChannelInfo();
             c.setName("RTU-" + i);
             c.setFrames(channelInfo.getFrames());
@@ -148,8 +148,7 @@ public class CommunicationManager implements IService {
             c.setPortInfo(channelInfo.getPortInfo());
             c.setProtocal(channelInfo.getProtocal());
             channels.add(c);
-            //initChannel(c);
-        }
+        }*/
         /*************** test end ***************/
 
 		for (ChannelInfo channel : channels) {
@@ -160,9 +159,7 @@ public class CommunicationManager implements IService {
 	
 	private void initChannel(ChannelInfo channel) throws Exception {
 		CommunicationChannel commChannel = null;
-        //List<EndTagWrapper> endTagList = TagCfgManager.getInstance().getEndTagWrapperByChannelIdx(channel.getIdx());
-        // TODO : 用于测试，只获取序号是1的通道对应的监控对象
-        List<EndTagWrapper> endTagList = TagCfgManager.getInstance().getEndTagWrapperByChannelIdx(1);
+        List<EndTagWrapper> endTagList = TagCfgManager.getInstance().getEndTagWrapperByChannelIdx(channel.getIdx());
 		switch (channel.getProtocal()) {
 		case ModbusTCP:
 			commChannel = new ModbusTcpChannel(channel, endTagList);

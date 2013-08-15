@@ -4,6 +4,7 @@ import com.ht.db.Database;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 
+import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 
@@ -60,7 +61,11 @@ public enum Config {
     private Config() {
         try {
             //config = new PropertiesConfiguration(configPath);
-            config = new PropertiesConfiguration(Config.class.getResource("/config.properties").toURI().toURL());
+            if (new File("config.properties").exists()) { // 先查找当前目录下有没有配置文件
+                config = new PropertiesConfiguration("config.properties");
+            } else {
+                config = new PropertiesConfiguration(Config.class.getResource("/config.properties").toURI().toURL());
+            }
             config.setAutoSave(true);
 
             database = Database.valueOf(config.getString("database", Database.MYSQL.toString()));

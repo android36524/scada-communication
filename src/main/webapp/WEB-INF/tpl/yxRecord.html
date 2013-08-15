@@ -55,15 +55,9 @@
         <!--<option th:each="endTagWrapper : commChannel.endTagList" th:value="${endTagWrapper.endTag.name}"-->
                 <!--th:text="${endTagWrapper.endTag.name}" selected="selected">1#油井</option>-->
     <!--</select>-->
-    <form action="endTagHistory" th:action="@{/endTagHistory}" method="post">
+    <form action="yxRecord" th:action="@{/yxRecord}" method="post">
     <div>
             <span th:text="${endTagWrapper.endTag.name}">监控对象名称</span>
-            <select name="varGroup">
-                <option th:each="varGroup : ${groupList}"
-                        th:selected="${varGroup.varGroupInfo} == ${varGroupWrapper.varGroupInfo}"
-                        th:value="${varGroup.varGroupInfo.name}"
-                        th:text="${varGroup.varGroupInfo.value}"></option>
-            </select>
             <input type="hidden" name="idx" th:value="${idx}" />
             <input name="date" id="datePicker" type="text" th:value="${#dates.format(date,'yyyy-MM-dd')}" />
             <input type="submit" value="查询" />
@@ -73,29 +67,25 @@
         <table class="dataintable">
             <tr>
                 <th>日期时间</th>
-                <th th:each="yxVar : ${varGroupWrapper.yxVarList}" th:text="${yxVar.tpl.tagName}"></th>
-                <th th:each="ycVar : ${varGroupWrapper.ycVarList}" th:text="${ycVar.tpl.tagName}"
-                    th:if="${ycVar.tpl.varType + ''} != 'QT'"></th>
-                <th th:each="ymVar : ${varGroupWrapper.ymVarList}" th:text="${ymVar.tpl.tagName}"></th>
-                <th th:each="ycVar : ${varGroupWrapper.ycVarList}" th:text="${ycVar.tpl.tagName}"
-                    th:if="${ycVar.tpl.varType + ''} == 'QT'"></th>
+                <th>ID</th>
+                <th>监控对象ID</th>
+                <th>监控对象名称</th>
+                <th>监控对象编号</th>
+                <th>变量标签</th>
+                <th>变量名称</th>
+                <th>信息</th>
+                <th>动作值</th>
             </tr>
             <tr th:each="data : ${dataList}">
                 <td th:text="${#dates.format(data.datetime,'HH:mm:ss')}"></td>
-                <td th:each="yxVar : ${varGroupWrapper.yxVarList}"
-                    th:text="${data.yxValueMap.get(yxVar.tpl.varName)}"></td>
-                <td th:each="ycVar : ${varGroupWrapper.ycVarList}"
-                    th:text="${data.ycValueMap.get(ycVar.tpl.varName)}"
-                    th:if="${ycVar.tpl.varType + ''} != 'QT'"></td>
-                <td th:each="ymVar : ${varGroupWrapper.ymVarList}"
-                    th:text="${data.ymValueMap.get(ymVar.tpl.varName)}"></td>
-                <td th:each="ycVar : ${varGroupWrapper.ycVarList}"
-                    th:if="${ycVar.tpl.varType + ''} == 'QT'" th:text="${java.util.Arrays.toString(data.arrayValueMap.get(ycVar.tpl.varName))}" style="width: 70px; overflow: hidden;">
-                                    <!--<span th:each="ycArrayItem : ${data.arrayValueMap.get(ycVar.tpl.varName)}"-->
-                                          <!--th:text="${#numbers.formatDecimal(ycArrayItem, 3, 2)}" style="padding: 2px;">-->
-                                        <!--123.4dsaf-0000000000000000000-->
-                                    <!--</span>-->
-                </td>
+                <td th:text="${data.id}"></td>
+                <td th:text="${data.endId}"></td>
+                <td th:text="${data.endName}"></td>
+                <td th:text="${data.code}"></td>
+                <td th:text="${data.tagName}"></td>
+                <td th:text="${data.name}"></td>
+                <td th:text="${data.info}"></td>
+                <td th:text="${data.value ? '合' : '分'}"></td>
                 <!--th:text="${data.arrayValueMap.get(ycVar.tpl.varName)}"-->
             </tr>
         </table>

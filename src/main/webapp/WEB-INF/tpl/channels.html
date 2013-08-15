@@ -45,6 +45,23 @@
         </tr>
         </tbody>
     </table>
+    <div style="padding: 5px 0;">
+        <form action="channels.html" th:action="@{/channels}" method="post">
+            <select onchange="javascript:$('form').submit();" name="pageSize">
+                <option value="10" selected="selected" th:selected="${pageSize} == 10">10</option>
+                <option value="15" th:selected="${pageSize} == 15">15</option>
+                <option value="20" th:selected="${pageSize} == 20">20</option>
+                <option value="30" th:selected="${pageSize} == 30">30</option>
+                <option value="50" th:selected="${pageSize} == 50">50</option>
+            </select>
+        <input type="button" value="上一页" onclick="prevPage()" th:disabled="${pageIndex} &lt; 2" />
+        <select onchange="javascript:$('form').submit();" name="pageIndex" id="pageIndex">
+            <option th:each="i : ${#numbers.sequence(1, pageCount)}"
+                    th:value="${i}" th:text="'第' + ${i}+ '页'" th:selected="${pageIndex} == ${i}"></option>
+        </select>
+        <input type="button" value="下一页" onclick="nextPage()" th:disabled="${pageIndex} == ${pageCount}" />
+        </form>
+    </div>
     <script type="text/javascript">
         $(function(){
             $("#searchBtn").click(function() {
@@ -57,6 +74,19 @@
 
             });
         });
+        function prevPage() {
+            var pageIndex = $("#pageIndex").val();
+            var prevPageIndex = parseInt(pageIndex) - 1;
+            $("#pageIndex").val(prevPageIndex);
+            $("form").submit();
+        }
+
+        function nextPage() {
+            var pageIndex = $("#pageIndex").val();
+            var nextPageIndex = parseInt(pageIndex) + 1;
+            $("#pageIndex").val(nextPageIndex);
+            $("form").submit();
+        }
     </script>
 </div>
 </body>

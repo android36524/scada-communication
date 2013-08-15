@@ -6,6 +6,8 @@ import com.ht.scada.communication.entity.FaultRecord;
 import com.ht.scada.communication.entity.OffLimitsRecord;
 import com.ht.scada.communication.entity.YxRecord;
 import com.ht.scada.communication.service.RealtimeDataService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Pipeline;
@@ -18,6 +20,7 @@ import java.util.Map;
  *
  */
 public class RealtimeDataServiceImpl implements RealtimeDataService {
+    private static final Logger log = LoggerFactory.getLogger(RealtimeDataServiceImpl.class);
 
     /**
      * 遥信变位广播通道名称
@@ -108,6 +111,7 @@ public class RealtimeDataServiceImpl implements RealtimeDataService {
 
     @Override
     public void faultOccured(FaultRecord record) {
+        log.info("故障报警:{} {}", record.getCode(), record.getName());
         publish(FAULT_CHANNEL, JSON.toJSONString(record));
     }
 

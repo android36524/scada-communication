@@ -54,6 +54,9 @@ public class GTVGApplication {
         controllersByURL.put("/channels", new ChannelController());
         controllersByURL.put("/endTag", new EndModelController());
         controllersByURL.put("/endTagHistory", new EndModelHistoryController());
+        controllersByURL.put("/yxRecord", new EndModelYxRecordController());
+        controllersByURL.put("/faultRecord", new EndModelFaultRecordController());
+        controllersByURL.put("/offLimitsRecord", new EndModelOffLimitsRecordController());
 //        controllersByURL.put("/product/list", new ProductListController());
 //        controllersByURL.put("/product/comments", new ProductCommentsController());
 //        controllersByURL.put("/order/list", new OrderListController());

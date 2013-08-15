@@ -36,14 +36,6 @@ public class EndTagWrapper {
 	private final Map<String, VarGroupData> historyGroupDataMap = new HashMap<>();
 
     /**
-     * 历史数据暂存
-     */
-	private final List<VarGroupData> groupDataList = new ArrayList<>();
-	private final List<YxRecord> yxRecordList = new ArrayList<>();
-	private final List<FaultRecord> faultRecordList = new ArrayList<>();
-	private final List<OffLimitsRecord> offLimitsRecordList = new ArrayList<>();
-
-    /**
      * 遥信、遥测、遥脉实时数据暂存
      */
     private Map<String, String> realtimeDataMap = new HashMap<>(256);
@@ -296,34 +288,23 @@ public class EndTagWrapper {
     public void updateRealtimeData() {
         if (!realtimeDataMap.isEmpty()) {
             realtimeDataService.updateEndModel(endTag.getCode(), realtimeDataMap);
+            realtimeDataMap.clear();
         }
         if (!realtimeYcArrayDataMap.isEmpty()) {
             realtimeDataService.updateEndModelYcArray(endTag.getCode(), realtimeYcArrayDataMap);
+            realtimeYcArrayDataMap.clear();
         }
     }
 
     /**
-     * 保存历史数据
+     * 保存RTU历史数据
      */
-    public void persistHistoryData() {
-        if (!this.groupDataList.isEmpty()) {
-            log.debug("{} - 保存分组历史数据共{}个", endTag.getName(), this.groupDataList.size());
-            historyDataService.saveVarGroupData(this.groupDataList);
-            this.groupDataList.clear();
+    public void persistRtuHistoryData() {
+        if (!this.historyGroupDataMap.isEmpty()) {
+            log.debug("{} - 保存RTU历史数据共{}个", endTag.getName(), this.historyGroupDataMap.size());
+            historyDataService.saveVarGroupData(this.historyGroupDataMap.values());
+            this.historyGroupDataMap.clear();
         }
-        if (!this.yxRecordList.isEmpty()) {
-            historyDataService.saveYXData(this.yxRecordList);
-            this.yxRecordList.clear();
-        }
-        if(!this.offLimitsRecordList.isEmpty()) {
-            historyDataService.saveOffLimitsRecord(this.offLimitsRecordList);
-            this.offLimitsRecordList.clear();
-        }
-        if (!this.faultRecordList.isEmpty()) {
-            historyDataService.saveFaultRecord(this.faultRecordList);
-            this.faultRecordList.clear();
-        }
-        this.historyGroupDataMap.clear();
     }
 
     /**
@@ -331,7 +312,7 @@ public class EndTagWrapper {
      * @param record
      */
     public void addFaultRecord(FaultRecord record, boolean pushMessage) {
-        faultRecordList.add(record);
+        historyDataService.saveOrUpdateFaultRecord(record);
         if (pushMessage) {
             if (record.getResumeTime() == null) {// 故障报警
                 realtimeDataService.faultOccured(record);
@@ -342,7 +323,7 @@ public class EndTagWrapper {
     }
 
     public void addOffLimitsRecord(OffLimitsRecord record, boolean pushMessage) {
-        offLimitsRecordList.add(record);
+        historyDataService.saveOrUpdateOffLimitsRecord(record);
         if (pushMessage) {
             if (record.getResumeTime() == null) {// 越限报警
                 realtimeDataService.offLimitsOccured(record);
@@ -353,7 +334,7 @@ public class EndTagWrapper {
     }
 
     public void addYxData(YxRecord record, boolean pushMessage) {
-        yxRecordList.add(record);
+        historyDataService.saveYXData(record);
         if (pushMessage) {//推送消息
             realtimeDataService.yxChanged(record);
         }
@@ -412,7 +393,8 @@ public class EndTagWrapper {
                 data.setCode(endTag.getCode());
                 data.setGroup(varGroup);
                 data.setDatetime(datetime);
-                groupDataList.add(data);
+
+                historyDataService.saveVarGroupData(data);
                 log.debug("加入分组存储队列：{}({})-{}", endTag.getName(), endTag.getCode(), varGroup);
             }
         }
@@ -426,7 +408,6 @@ public class EndTagWrapper {
             data.setGroup(var.tpl.getVarGroup());
             data.setDatetime(datetime);
             historyGroupDataMap.put(key, data);
-            groupDataList.add(data);
         }
         data.getYmValueMap().put(var.tpl.getVarName(), value);
     }
@@ -439,7 +420,6 @@ public class EndTagWrapper {
             data.setGroup(var.tpl.getVarGroup());
             data.setDatetime(datetime);
             historyGroupDataMap.put(key, data);
-            groupDataList.add(data);
         }
         data.getYcValueMap().put(var.tpl.getVarName(), value);
     }
@@ -452,7 +432,6 @@ public class EndTagWrapper {
             data.setGroup(var.tpl.getVarGroup());
             data.setDatetime(datetime);
             historyGroupDataMap.put(key, data);
-            groupDataList.add(data);
         }
         float[] v = data.getArrayValueMap().get(var.tpl.getVarName());
         if (v == null) {
@@ -470,7 +449,6 @@ public class EndTagWrapper {
             data.setGroup(var.tpl.getVarGroup());
             data.setDatetime(datetime);
             historyGroupDataMap.put(key, data);
-            groupDataList.add(data);
         }
         data.getYxValueMap().put(var.tpl.getVarName(), value);
     }

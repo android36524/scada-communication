@@ -36,6 +36,7 @@
     <logger name="com.ht" level="DEBUG"/>
   <logger name="com.ht.scada" level="DEBUG"/>
     <logger name="com.ht.scada.communication" level="INFO"/>
+    <logger name="com.ht.scada.communication.dao" level="DEBUG"/>
     <logger name="com.ht.iec104" level="INFO"/>
     <logger name="io.netty" level="INFO"/>
   <root level="ERROR">

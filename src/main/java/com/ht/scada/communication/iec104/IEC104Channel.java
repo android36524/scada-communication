@@ -20,7 +20,6 @@ import com.ht.scada.communication.util.CommUtil;
 import com.ht.scada.communication.util.DataValueUtil;
 import com.ht.scada.communication.util.PortInfoFactory;
 import com.ht.scada.communication.util.PortInfoFactory.TcpIpInfo;
-import io.netty.channel.EventLoop;
 import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,9 +28,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * IEC104规约采集通道<br>
@@ -55,8 +52,8 @@ public class IEC104Channel extends CommunicationChannel {
     private IEC104Master master;
 
     private IEC104Channel.MyMasterHandler masterHandler;
-    //private ScheduledExecutorService executorService;
-    private EventLoop executorService;
+    private ScheduledExecutorService executorService;
+    //private EventLoop executorService;
 
     public IEC104Channel(ChannelInfo channel, List<EndTagWrapper> endTagList) throws Exception {
         super(channel, endTagList);
@@ -82,7 +79,11 @@ public class IEC104Channel extends CommunicationChannel {
 
             //group.next().execute(null);
             masterHandler = new MyMasterHandler();
+            // todo:
+            tcpIpInfo.ip = "192.168.1.80";
+            // end
             master = new IEC104Master(CommunicationManager.getInstance().getNioEventLoopGroup(), tcpIpInfo.ip, tcpIpInfo.port, 1, masterHandler);
+            master.setName(channel.getName());
 
         } else {
             log.error("采集通道{}的物理端口信息配置错误：{}", portInfo);
@@ -98,12 +99,12 @@ public class IEC104Channel extends CommunicationChannel {
         if (master != null) {
             running = true;
 
-            //executorService = Executors.newSingleThreadScheduledExecutor();
-            executorService = CommunicationManager.getInstance().getNioEventLoopGroup().next();
+            executorService = Executors.newSingleThreadScheduledExecutor();
+            //executorService = CommunicationManager.getInstance().getNioEventLoopGroup().next();
             master.open();
 
             /** 定时执行数据召唤 **/
-            for (final IEC104Frame frame: frameList) { // 只需要执行一次的召唤和历史数据召唤不在此处执行
+/*            for (final IEC104Frame frame: frameList) { // 只需要执行一次的召唤和历史数据召唤不在此处执行
                 if (frame.interval > 0 && frame.ti != TiConst.CALL_HIS_DAT) {
                     // 按召唤间隔执行数据召唤
                     executorService.scheduleAtFixedRate(new Runnable() {
@@ -113,7 +114,7 @@ public class IEC104Channel extends CommunicationChannel {
                         }
                     }, frame.interval, frame.interval, TimeUnit.SECONDS);
                 }
-            }
+            }*/
 
             // 定时更新实时数据库
             executorService.scheduleAtFixedRate(new Runnable() {
@@ -125,14 +126,6 @@ public class IEC104Channel extends CommunicationChannel {
                 }
             }, realtimeDataInterval, realtimeDataInterval, TimeUnit.SECONDS);
 
-            // 定时更新历史数据库
-            // TODO 暂时不写历史数据
-//            executorService.scheduleAtFixedRate(new Runnable() {
-//                @Override
-//                public void run() {
-//                    persistHistoryData();
-//                }
-//            }, historyDataInterval, historyDataInterval, TimeUnit.SECONDS);
         }
     }
 
@@ -988,19 +981,32 @@ public class IEC104Channel extends CommunicationChannel {
 
             for (final IEC104Frame frame: frameList) {
                 if (frame.ti == ti) {
-                    if (frame.ti == TiConst.CALL_HIS_DAT && frame.interval > 60) {// RTU历史数据召唤结束
-                        executorService.execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                // 处理RTU历史数据
-                                handleHisYxFrame(frame.interval / 60);
-                                handleHisYcFrame(frame.interval / 60);
-                                handleHisYmFrame(frame.interval / 60);
-                                // 召唤下一时间段的历史数据
-                                callHistoryData(frame.interval / 60);
-                            }
-                        });
+                    if (frame.ti == TiConst.CALL_HIS_DAT) {// RTU历史数据召唤结束
+                        if ( frame.interval > 60) {
+                            executorService.execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    // 处理RTU历史数据
+                                    handleHisYxFrame(frame.interval / 60);
+                                    handleHisYcFrame(frame.interval / 60);
+                                    handleHisYmFrame(frame.interval / 60);
+                                    // 保存当前采集的RTU历史数据
+                                    persistRtuHistoryData();
+                                    // 召唤下一时间段的历史数据
+                                    callHistoryData(frame.interval / 60);
+                                }
+                            });
+                        }
                     } else { // 处理本次召唤收到的数据
+                        if (frame.interval > 0) { // 按召唤间隔执行下次数据召唤
+                            executorService.schedule(new Runnable() {
+                                @Override
+                                public void run() {
+                                    master.call(frame.ti);
+                                }
+                            }, frame.interval, TimeUnit.SECONDS);
+                        }
+
                         final Date date = new Date();
                         executorService.execute(new Runnable() {
                             @Override
@@ -1008,6 +1014,9 @@ public class IEC104Channel extends CommunicationChannel {
                                 handleYxFrame(date);
                                 handleYcFrame(date);
                                 handleYmFrame(date);
+
+                                // todo 暂不生成历史数据
+                                // 写入历史库
                                 for (VarGroupEnum group : getVarGroupByTi(frame.ti)) {
                                     generateHistoryData(group, date);
                                 }
@@ -1084,7 +1093,9 @@ public class IEC104Channel extends CommunicationChannel {
                     for (final IEC104Frame frame: frameList) {
                         if(frame.ti == TiConst.CALL_HIS_DAT) {// 历史数据召唤
                             callHistoryData(frame.interval / 60);
-                        } else if (frame.interval <= 0) {// 只执行1次的数据召唤
+//                        } else if (frame.interval <= 0) {// 只执行1次的数据召唤
+//                            master.call(frame.ti);
+                        } else {
                             master.call(frame.ti);
                         }
                     }

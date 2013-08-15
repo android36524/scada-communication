@@ -5,6 +5,7 @@ import com.ht.scada.communication.dao.YxRecordDao;
 import com.ht.scada.communication.entity.YxRecord;
 
 import java.sql.Timestamp;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -28,10 +29,28 @@ public class YxRecordDaoImpl extends BaseDaoImpl<YxRecord> implements YxRecordDa
         Object[][] params = new Object[records.size()][6];
         for (int i = 0; i < records.size(); i++) {
             YxRecord record = records.get(i);
-            params[i] = new Object[]{record.getId(), record.getCode(), record.getName(),
+            params[i] = new Object[]{
+                    record.getId(), record.getEndId(), record.getEndName(), record.getTagName(),
+                    record.getCode(), record.getName(),
                         record.getInfo(), record.getValue() ? 1 : 0, new Timestamp(record.getDatetime().getTime())};
         }
         getDbUtilsTemplate().batchUpdate(insertSql, params);
+    }
+
+    @Override
+    public long getCount(String code, Date start, Date end) {
+        String sql = "select count(id) from T_YX_Record where code=? and datetime>=? and datetime<?";
+        Long count = getDbUtilsTemplate().findBy(sql, null, code, new Timestamp(start.getTime()), new Timestamp(end.getTime()));
+        return count == null ? 0 : count;
+    }
+
+    @Override
+    public List<YxRecord> findByDateTime(String code, Date start, Date end, int skip, int limit) {
+        StringBuilder sqlBuilder = new StringBuilder();
+        sqlBuilder.append("select * from T_YX_Record where code=? and datetime>=? and datetime<? order by datetime asc limit ");
+        sqlBuilder.append(skip).append(",").append(limit);
+        return getDbUtilsTemplate().find(YxRecord.class, sqlBuilder.toString(), code,
+                new Timestamp(start.getTime()), new Timestamp(end.getTime()));
     }
 
     @Override

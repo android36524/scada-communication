@@ -15,6 +15,12 @@ public class FaultRecord {
 
     @Id
 	private String id;	// 唯一主键
+    @Column(name = "end_id")
+    private int endId;
+    @Column(name = "end_name")
+    private String endName;
+    @Column(name = "tag_name")
+    private String tagName;// 中文名称
 	private String code;// 计量点编号(回路号、井号等)
 	private String name;// 变量名称
 	private String info;// 故障信息
@@ -33,14 +39,33 @@ public class FaultRecord {
         this.id = UUID.randomUUID().toString().replace("-", "");
 	}
 	
-	public FaultRecord(String code, String name, String info, boolean value, Date actionTime) {
+	public FaultRecord(int endId, String endName, String code, String name, String tagName, String info, boolean value, Date actionTime) {
         this.id = UUID.randomUUID().toString().replace("-", "");
+        this.endId = endId;
+        this.endName = endName;
 		this.code = code;
 		this.name = name;
+        this.tagName = tagName;
 		this.info = info;
 		this.value = value;
 		this.actionTime = actionTime;
 	}
+
+    public int getEndId() {
+        return endId;
+    }
+
+    public void setEndId(int endId) {
+        this.endId = endId;
+    }
+
+    public String getEndName() {
+        return endName;
+    }
+
+    public void setEndName(String endName) {
+        this.endName = endName;
+    }
 
     public boolean isPersisted() {
         return persisted;
@@ -74,7 +99,15 @@ public class FaultRecord {
 		this.name = name;
 	}
 
-	public String getInfo() {
+    public String getTagName() {
+        return tagName;
+    }
+
+    public void setTagName(String tagName) {
+        this.tagName = tagName;
+    }
+
+    public String getInfo() {
 		return info;
 	}
 

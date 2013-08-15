@@ -82,25 +82,25 @@ public class HistoryDataServiceImpl implements HistoryDataService {
         }.run();
     }
 
-	@Override
-	public void saveYXData(List<YxRecord> list) {
-        yxRecordDao.insertAll(list);
-	}
-
-	@Override
-	public void saveOffLimitsRecord(List<OffLimitsRecord> list) {
-        offLimitsRecordDao.insertOrUpdateAll(list);
-    }
-
-	@Override
-	public void saveFaultRecord(List<FaultRecord> list) {
-        faultRecordDao.insertOrUpdateAll(list);
+    @Override
+    public void saveYXData(YxRecord record) {
     }
 
     @Override
-    public void saveVarGroupData(List<VarGroupData> list) {
+    public void saveOrUpdateOffLimitsRecord(OffLimitsRecord record) {
+    }
+
+    @Override
+    public void saveOrUpdateFaultRecord(FaultRecord record) {
+    }
+
+    @Override
+    public void saveVarGroupData(Collection<VarGroupData> collection) {
         log.info("保存变量分组数据");
-        saveData(list);
+    }
+
+    @Override
+    public void saveVarGroupData(VarGroupData data) {
     }
 
     @Override
@@ -151,4 +151,33 @@ public class HistoryDataServiceImpl implements HistoryDataService {
         return list;
     }
 
+    @Override
+    public long getYxRecordCount(String code, Date start, Date end) {
+        return 0;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public long getFaultRecordCount(String code, Date start, Date end) {
+        return 0;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public long getOfflimitsRecordCount(String code, Date start, Date end) {
+        return 0;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public List<YxRecord> getYxRecordByDatetime(String code, Date start, Date end, int skip, int limit) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public List<FaultRecord> getFaultRecordByActionTime(String code, Date start, Date end, int skip, int limit) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public List<OffLimitsRecord> getOffLimitsRecordByActionTime(String code, Date start, Date end, int skip, int limit) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
 }

@@ -24,6 +24,6 @@ public enum Database {
 
 	SYBASE,
 
-    ORACLE_KV,
+    ORACLE_KV
 
 }

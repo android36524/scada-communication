@@ -55,9 +55,9 @@ public abstract class CommunicationChannel implements ICommChannel {
 	/**
 	 * 保存历史数据
 	 */
-	protected void persistHistoryData() {
+	protected void persistRtuHistoryData() {
 		for (EndTagWrapper model : endTagList) {// 遍历所有节点并进行处理
-            model.persistHistoryData();
+            model.persistRtuHistoryData();
 		}
 	}
 

@@ -3,6 +3,8 @@ package com.ht.scada.communication.dao.impl;
 import com.ht.db.util.DbUtilsTemplate;
 import com.ht.scada.communication.dao.BaseDao;
 
+import javax.inject.Inject;
+
 /**
  * Created with IntelliJ IDEA.
  * 作者: "薄成文"
@@ -13,13 +15,7 @@ public abstract class BaseDaoImpl<T> implements BaseDao<T> {
 
     private DbUtilsTemplate dbUtilsTemplate;
 
-    protected BaseDaoImpl() {
-    }
-
-    protected BaseDaoImpl(DbUtilsTemplate dbUtilsTemplate) {
-        this.dbUtilsTemplate = dbUtilsTemplate;
-    }
-
+    @Inject
     @Override
     public void setDbUtilsTemplate(DbUtilsTemplate dbUtilsTemplate) {
         this.dbUtilsTemplate = dbUtilsTemplate;

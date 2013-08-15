@@ -1,7 +1,6 @@
 package com.ht.scada.communication.dao.impl;
 
 import co.mewf.sqlwriter.Queries;
-import com.ht.db.util.DbUtilsTemplate;
 import com.ht.scada.communication.dao.OffLimitsRecordDao;
 import com.ht.scada.communication.entity.OffLimitsRecord;
 
@@ -20,12 +19,8 @@ public class OffLimitsRecordDaoImpl extends BaseDaoImpl<OffLimitsRecord> impleme
     private String insertSql;
     private String updateSql;
 
-    public OffLimitsRecordDaoImpl() {
-        this(null);
-    }
 
-    public OffLimitsRecordDaoImpl(DbUtilsTemplate dbUtilsTemplate) {
-        super(dbUtilsTemplate);
+    public OffLimitsRecordDaoImpl() {
         // INSERT INTO T_OffLimits_Record(id, endId, endName, tagName, code, name, info, value, threshold, type, action_time, resume_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
         //insertSql = Queries.insert(OffLimitsRecord.class).sql();
         insertSql = "INSERT INTO T_OffLimits_Record(id, end_id, end_name, tag_name, code, name, info, value, action_time, resume_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";

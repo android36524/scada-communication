@@ -8,13 +8,20 @@ import com.ht.scada.common.tag.util.VarGroupEnum;
 import com.ht.scada.common.tag.util.VarSubTypeEnum;
 import com.ht.scada.common.tag.util.VarTypeEnum;
 import com.ht.scada.communication.dao.ChannelInfoDao;
-import com.ht.scada.communication.entity.*;
+import com.ht.scada.communication.entity.ChannelInfo;
+import com.ht.scada.communication.entity.FaultRecord;
+import com.ht.scada.communication.entity.OffLimitsRecord;
+import com.ht.scada.communication.entity.TagVarTpl;
+import com.ht.scada.communication.web.MyGuiceApplicationListener;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 public class Test {
 
@@ -149,7 +156,7 @@ public class Test {
     }
 
     private static void dbTest2() {
-        ChannelInfoDao channelInfoDao = DataBaseManager.getInstance().getChannelInfoDao();
+        ChannelInfoDao channelInfoDao = MyGuiceApplicationListener.injector.getInstance(ChannelInfoDao.class);
 
         List<ChannelInfo> list = DataBaseManager.getInstance().getDbTemplate().find(ChannelInfo.class, "select * from T_Acquisition_Channel where update_time < ?", new Date());
         //List<ChannelInfo> list = channelInfoDao.getAll();

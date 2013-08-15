@@ -1,10 +1,12 @@
 package com.ht.db.util;
 
+import com.google.inject.Singleton;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import javax.inject.Inject;
 import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -23,21 +25,16 @@ import java.util.Map;
 * </code> 
 * @author Sunshine 
 * @version 1.0 2009-07-29 
-*/ 
+*/
+@Singleton
 public class DbUtilsTemplate { 
 
-    private DataSource dataSource;
+    private final DataSource dataSource;
     private QueryRunner queryRunner; 
     private static final Log LOG = LogFactory.getLog(DbUtilsTemplate.class);
 
-    public DbUtilsTemplate() {
-    }
-
+    @Inject
     public DbUtilsTemplate(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
-
-    public void setDataSource(DataSource dataSource) {
         this.dataSource = dataSource;
     }
 

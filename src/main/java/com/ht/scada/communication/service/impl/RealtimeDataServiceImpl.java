@@ -2,6 +2,7 @@ package com.ht.scada.communication.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.google.inject.Singleton;
 import com.ht.scada.communication.entity.FaultRecord;
 import com.ht.scada.communication.entity.OffLimitsRecord;
 import com.ht.scada.communication.entity.YxRecord;
@@ -13,12 +14,14 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Pipeline;
 
 import javax.annotation.PreDestroy;
+import javax.inject.Inject;
 import java.util.Map;
 
 /**
  * @author 薄成文
  *
  */
+@Singleton
 public class RealtimeDataServiceImpl implements RealtimeDataService {
     private static final Logger log = LoggerFactory.getLogger(RealtimeDataServiceImpl.class);
 
@@ -38,8 +41,9 @@ public class RealtimeDataServiceImpl implements RealtimeDataService {
     public static final String FAULT_CHANNEL = "FaultChannel";
 
     //private ShardedJedisPool pool;
-    private JedisPool pool;
+    private final JedisPool pool;
 
+    @Inject
     public RealtimeDataServiceImpl(JedisPool pool) {
         this.pool = pool;
 

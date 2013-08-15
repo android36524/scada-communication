@@ -2,7 +2,6 @@ package com.ht.scada.communication.dao.impl;
 
 import com.google.common.base.Joiner;
 import com.ht.db.Database;
-import com.ht.db.util.DbUtilsTemplate;
 import com.ht.scada.common.tag.util.VarGroupEnum;
 import com.ht.scada.communication.Config;
 import com.ht.scada.communication.VarGroupTable;
@@ -26,9 +25,6 @@ public class VarGroupDataDaoImpl extends BaseDaoImpl<VarGroupData> implements Va
     public static final Logger log = LoggerFactory.getLogger(VarGroupDataDaoImpl.class);
     private static final String VAR_GROUP_TABLE_PREFIX = "T_Group_";
 
-    public VarGroupDataDaoImpl(DbUtilsTemplate dbUtilsTemplate) {
-        super(dbUtilsTemplate);
-    }
 
     @Override
     public void insert(VarGroupData varGroupData) {

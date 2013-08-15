@@ -9,6 +9,7 @@ import com.ht.scada.communication.entity.VarGroupInfo;
 import com.ht.scada.communication.entity.VarIOInfo;
 import com.ht.scada.communication.model.EndTagWrapper;
 import com.ht.scada.communication.model.TagVarTplWrapper;
+import com.ht.scada.communication.web.MyGuiceApplicationListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,11 +36,11 @@ class TagCfgManager {
     private List<EndTag> endTagList;
 
     private TagCfgManager() {
-        endTagDao = DataBaseManager.getInstance().getEndTagDao();
-        varGroupInfoDao = DataBaseManager.getInstance().getVarGroupInfoDao();
-        varIOInfoDao = DataBaseManager.getInstance().getVarIOInfoDao();
-        tagVarTplDao = DataBaseManager.getInstance().getTagVarTplDao();
-        varGroupDataDao = DataBaseManager.getInstance().getVarGroupDataDao();
+        endTagDao = MyGuiceApplicationListener.injector.getInstance(EndTagDao.class);
+        varGroupInfoDao = MyGuiceApplicationListener.injector.getInstance(VarGroupInfoDao.class);
+        varIOInfoDao = MyGuiceApplicationListener.injector.getInstance(VarIOInfoDao.class);
+        tagVarTplDao = MyGuiceApplicationListener.injector.getInstance(TagVarTplDao.class);
+        varGroupDataDao = MyGuiceApplicationListener.injector.getInstance(VarGroupDataDao.class);
     }
 
     /**

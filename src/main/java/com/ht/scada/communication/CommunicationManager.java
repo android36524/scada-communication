@@ -5,6 +5,7 @@ import com.ht.scada.communication.entity.ChannelInfo;
 import com.ht.scada.communication.iec104.IEC104Channel;
 import com.ht.scada.communication.modbus.ModbusTcpChannel;
 import com.ht.scada.communication.model.EndTagWrapper;
+import com.ht.scada.communication.web.MyGuiceApplicationListener;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +58,7 @@ public class CommunicationManager implements IService {
 	 * @throws Exception
 	 */
 	public void init() throws Exception {
-        channelInfoDao = DataBaseManager.getInstance().getChannelInfoDao();
+        channelInfoDao = MyGuiceApplicationListener.injector.getInstance(ChannelInfoDao.class);
         TagCfgManager.getInstance().init();
 		initChannels();
 	}

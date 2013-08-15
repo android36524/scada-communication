@@ -1,22 +1,15 @@
 package com.ht.scada.communication;
 
 import com.alibaba.druid.pool.DruidDataSource;
-import com.ht.db.Database;
 import com.ht.db.util.DbUtilsTemplate;
 import com.ht.scada.communication.dao.*;
-import com.ht.scada.communication.dao.impl.*;
 import com.ht.scada.communication.service.HistoryDataService;
 import com.ht.scada.communication.service.RealtimeDataService;
-import com.ht.scada.communication.service.impl.HistoryDataServiceImpl;
-import com.ht.scada.communication.service.impl.HistoryDataServiceImpl2;
-import com.ht.scada.communication.service.impl.RealtimeDataServiceImpl;
+import com.ht.scada.communication.web.MyGuiceApplicationListener;
 import oracle.kv.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created with IntelliJ IDEA.
@@ -54,7 +47,7 @@ public class DataBaseManager {
     private HistoryDataService historyDataService;
 
     private DataBaseManager() {
-        dataSource = new DruidDataSource();
+/*        dataSource = new DruidDataSource();
         dataSource.setMaxWait(60000);
         dataSource.setMaxActive(20);
         dataSource.setMinIdle(1);
@@ -73,16 +66,16 @@ public class DataBaseManager {
             ex.printStackTrace();
         }
 
-        dbTemplate = new DbUtilsTemplate(dataSource);
+        dbTemplate = new DbUtilsTemplate(dataSource);*/
 
-        initJedisPool();
-        if (Config.INSTANCE.getDatabase() == Database.ORACLE_KV) {
-            initKVStore();
-        }
+//        initJedisPool();
+//        if (Config.INSTANCE.getDatabase() == Database.ORACLE_KV) {
+//            initKVStore();
+//        }
     }
 
     public void init() {
-        channelInfoDao = new ChannelInfoDaoImpl();
+/*        channelInfoDao = new ChannelInfoDaoImpl();
         channelInfoDao.setDbUtilsTemplate(dbTemplate);
 
         endTagDao = new EndTagDaoImpl();
@@ -110,7 +103,9 @@ public class DataBaseManager {
             historyDataService = new HistoryDataServiceImpl(kvStore, kvConfig.getRequestTimeout(TimeUnit.MILLISECONDS));
         } else {
             historyDataService = new HistoryDataServiceImpl2();
-        }
+        }*/
+        realtimeDataService = MyGuiceApplicationListener.injector.getInstance(RealtimeDataService.class);
+        historyDataService = MyGuiceApplicationListener.injector.getInstance(HistoryDataService.class);
     }
 
     private void initKVStore() {
@@ -121,20 +116,6 @@ public class DataBaseManager {
             kvStore = KVStoreFactory.getStore(kvConfig);
         } catch (FaultException e) {
             log.error("无法连接到时任何一个节点", e);
-        }
-    }
-
-    private void initJedisPool() {
-        JedisPoolConfig jedisPoolConfig =new JedisPoolConfig();//Jedis池配置
-        jedisPoolConfig.setMaxActive(Config.INSTANCE.getRedisMaxActive());// 最大活动的对象个数
-        jedisPoolConfig.setMaxIdle(Config.INSTANCE.getRedisMaxIdle());// 对象最大空闲时间
-        jedisPoolConfig.setMaxWait(Config.INSTANCE.getRedisMaxWait());// 获取对象时最大等待时间
-        //config.setTestOnBorrow(true);
-        if (Config.INSTANCE.getRedisPassword() != null) {
-            jedisPool = new JedisPool(jedisPoolConfig, Config.INSTANCE.getRedisHost(), Config.INSTANCE.getRedisPort(),
-                    Config.INSTANCE.getRedisTimeout(), Config.INSTANCE.getRedisPassword());
-        } else {
-            jedisPool = new JedisPool(jedisPoolConfig, Config.INSTANCE.getRedisHost(), Config.INSTANCE.getRedisPort());
         }
     }
 
@@ -162,39 +143,4 @@ public class DataBaseManager {
         return dbTemplate;
     }
 
-    public OffLimitsRecordDao getOffLimitsRecordDao() {
-        return offLimitsRecordDao;
-    }
-
-    public ChannelInfoDao getChannelInfoDao() {
-        return channelInfoDao;
-    }
-
-    public EndTagDao getEndTagDao() {
-        return endTagDao;
-    }
-
-    public TagVarTplDao getTagVarTplDao() {
-        return tagVarTplDao;
-    }
-
-    public VarGroupInfoDao getVarGroupInfoDao() {
-        return varGroupInfoDao;
-    }
-
-    public VarIOInfoDao getVarIOInfoDao() {
-        return varIOInfoDao;
-    }
-
-    public FaultRecordDao getFaultRecordDao() {
-        return faultRecordDao;
-    }
-
-    public YxRecordDao getYxRecordDao() {
-        return yxRecordDao;
-    }
-
-    public VarGroupDataDao getVarGroupDataDao() {
-        return varGroupDataDao;
-    }
 }

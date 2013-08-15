@@ -1,6 +1,5 @@
 package com.ht.scada.communication.dao.impl;
 
-import com.ht.db.util.DbUtilsTemplate;
 import com.ht.scada.communication.dao.FaultRecordDao;
 import com.ht.scada.communication.entity.FaultRecord;
 
@@ -18,11 +17,6 @@ public class FaultRecordDaoImpl extends BaseDaoImpl<FaultRecord> implements Faul
     private String updateSql;
 
     public FaultRecordDaoImpl() {
-        this(null);
-    }
-
-    public FaultRecordDaoImpl(DbUtilsTemplate dbUtilsTemplate) {
-        super(dbUtilsTemplate);
         insertSql = "INSERT INTO T_Fault_Record(id, end_id, end_name, tag_name, code, name, info, value, action_time, resume_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         // INSERT INTO T_Fault_Record(id, endId, endName, tagName, code, name, info, value, action_time, resume_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         //insertSql = Queries.insert(FaultRecord.class).sql();

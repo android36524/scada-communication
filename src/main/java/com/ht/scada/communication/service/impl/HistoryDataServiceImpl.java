@@ -1,14 +1,13 @@
 package com.ht.scada.communication.service.impl;
 
 import com.ht.scada.common.tag.util.VarGroupEnum;
-import com.ht.scada.communication.DataBaseManager;
 import com.ht.scada.communication.dao.FaultRecordDao;
 import com.ht.scada.communication.dao.OffLimitsRecordDao;
 import com.ht.scada.communication.dao.YxRecordDao;
 import com.ht.scada.communication.data.kv.IKVRecord;
-import com.ht.scada.communication.entity.VarGroupData;
 import com.ht.scada.communication.entity.FaultRecord;
 import com.ht.scada.communication.entity.OffLimitsRecord;
+import com.ht.scada.communication.entity.VarGroupData;
 import com.ht.scada.communication.entity.YxRecord;
 import com.ht.scada.communication.service.HistoryDataService;
 import com.ht.scada.communication.util.kv.KeyDefinition;
@@ -38,9 +37,9 @@ public class HistoryDataServiceImpl implements HistoryDataService {
         this.store = store;
         writeOps = new WriteOperations(store, requestTimeout);
 
-        offLimitsRecordDao = DataBaseManager.getInstance().getOffLimitsRecordDao();
-        faultRecordDao = DataBaseManager.getInstance().getFaultRecordDao();
-        yxRecordDao = DataBaseManager.getInstance().getYxRecordDao();
+//        offLimitsRecordDao = DataBaseManager.getInstance().getOffLimitsRecordDao();
+//        faultRecordDao = DataBaseManager.getInstance().getFaultRecordDao();
+//        yxRecordDao = DataBaseManager.getInstance().getYxRecordDao();
     }
     
 	public void destroy() {

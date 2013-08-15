@@ -1,6 +1,8 @@
 package com.ht.scada.communication;
 
+import com.google.inject.servlet.GuiceFilter;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -24,6 +26,8 @@ public class JettyServer {
         context.getInitParams().put("org.eclipse.jetty.servlet.Default.useFileMappedBuffer", "false");
         server.setHandler(context);
 
+        context.addFilter(GuiceFilter.class, "/*", 0);
+        context.addServlet(DefaultServlet.class, "/");
 
 //		FileInputStream fis = new FileInputStream(new File("./etc/jetty.xml"));
 //		XmlConfiguration configuration = new XmlConfiguration(fis);

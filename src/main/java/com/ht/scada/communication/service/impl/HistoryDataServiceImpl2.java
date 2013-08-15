@@ -1,7 +1,6 @@
 package com.ht.scada.communication.service.impl;
 
 import com.ht.scada.common.tag.util.VarGroupEnum;
-import com.ht.scada.communication.DataBaseManager;
 import com.ht.scada.communication.dao.FaultRecordDao;
 import com.ht.scada.communication.dao.OffLimitsRecordDao;
 import com.ht.scada.communication.dao.VarGroupDataDao;
@@ -14,6 +13,7 @@ import com.ht.scada.communication.service.HistoryDataService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -34,19 +34,20 @@ public class HistoryDataServiceImpl2 implements HistoryDataService {
     private final List<OffLimitsRecord> offLimitsInsertList = new ArrayList<>();
     private final List<OffLimitsRecord> offLimitsUpdateList = new ArrayList<>();
 
-    private OffLimitsRecordDao offLimitsRecordDao;
-    private FaultRecordDao faultRecordDao;
-    private YxRecordDao yxRecordDao;
-    private VarGroupDataDao varGroupDataDao;
+    private final OffLimitsRecordDao offLimitsRecordDao;
+    private final FaultRecordDao faultRecordDao;
+    private final YxRecordDao yxRecordDao;
+    private final VarGroupDataDao varGroupDataDao;
 
-    public HistoryDataServiceImpl2() {
-        offLimitsRecordDao = DataBaseManager.getInstance().getOffLimitsRecordDao();
-        faultRecordDao = DataBaseManager.getInstance().getFaultRecordDao();
-        yxRecordDao = DataBaseManager.getInstance().getYxRecordDao();
-        varGroupDataDao = DataBaseManager.getInstance().getVarGroupDataDao();
+    @Inject
+    public HistoryDataServiceImpl2(OffLimitsRecordDao offLimitsRecordDao, FaultRecordDao faultRecordDao, YxRecordDao yxRecordDao, VarGroupDataDao varGroupDataDao) {
+        this.offLimitsRecordDao = offLimitsRecordDao;
+        this.faultRecordDao = faultRecordDao;
+        this.yxRecordDao = yxRecordDao;
+        this.varGroupDataDao = varGroupDataDao;
     }
-    
-	public void destroy() {
+
+    public void destroy() {
 	}
 
     @Override

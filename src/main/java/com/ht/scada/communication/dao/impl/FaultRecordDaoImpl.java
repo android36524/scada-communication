@@ -27,12 +27,18 @@ public class FaultRecordDaoImpl extends BaseDaoImpl<FaultRecord> implements Faul
 
     @Override
     public void updateAll(List<FaultRecord> updateList) {
-        Object[][] params = new Object[updateList.size()][2];
+        final Object[][] params = new Object[updateList.size()][];
         for (int i = 0; i < params.length; i++) {
             FaultRecord record = updateList.get(i);
             params[i] = new Object[]{record.getResumeTime(), record.getId()};
         }
-        getDbUtilsTemplate().batchUpdate(updateSql, params);
+
+        dbUtilsTemplate.getDbExecutorService().execute(new Runnable() {
+            @Override
+            public void run() {
+                getDbUtilsTemplate().batchUpdate(updateSql, params);
+            }
+        });
     }
 
     @Override
@@ -54,7 +60,7 @@ public class FaultRecordDaoImpl extends BaseDaoImpl<FaultRecord> implements Faul
 
     @Override
     public void insertAll(List<FaultRecord> insertList) {
-        Object[][] params = new Object[insertList.size()][7];
+        final Object[][] params = new Object[insertList.size()][];
         for (int i = 0; i < params.length; i++) {
             FaultRecord record = insertList.get(i);
             record.setPersisted(true);
@@ -62,7 +68,12 @@ public class FaultRecordDaoImpl extends BaseDaoImpl<FaultRecord> implements Faul
                     record.getCode(), record.getName(), record.getInfo(),
                     record.getValue() ? 1 : 0, record.getActionTime(), record.getResumeTime()};
         }
-        getDbUtilsTemplate().batchUpdate(insertSql, params);
+        dbUtilsTemplate.getDbExecutorService().execute(new Runnable() {
+            @Override
+            public void run() {
+                getDbUtilsTemplate().batchUpdate(insertSql, params);
+            }
+        });
     }
 
     @Override

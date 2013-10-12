@@ -3,6 +3,8 @@ package com.ht.scada.communication;
 import com.ht.db.Database;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -17,6 +19,7 @@ import java.net.URISyntaxException;
  */
 public enum Config {
     INSTANCE;
+    private final Logger log = LoggerFactory.getLogger(Config.class);
 
     private PropertiesConfiguration config;
     private Database database;
@@ -59,6 +62,7 @@ public enum Config {
     private int redisTimeout;
 
     private Config() {
+        log.info("初始化参数配置");
         try {
             //config = new PropertiesConfiguration(configPath);
             if (new File("config.properties").exists()) { // 先查找当前目录下有没有配置文件

@@ -17,15 +17,16 @@ import javax.inject.Inject;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 历史数据服务MySQL实现
  */
 public class HistoryDataServiceImpl2 implements HistoryDataService {
     private static final Logger log = LoggerFactory.getLogger(HistoryDataServiceImpl2.class);
-    private static final String VAR_GROUP_TABLE_PREFIX = "T_Group_";
 
     private ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+
     private Map<VarGroupEnum, List<VarGroupData>> varGroupListMap = new HashMap<>();
 
     private final List<YxRecord> yxRecordList = new ArrayList<>();
@@ -45,10 +46,47 @@ public class HistoryDataServiceImpl2 implements HistoryDataService {
         this.faultRecordDao = faultRecordDao;
         this.yxRecordDao = yxRecordDao;
         this.varGroupDataDao = varGroupDataDao;
-    }
 
-    public void destroy() {
-	}
+        // 报警记录，最慢10秒保存1次
+        executorService.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                if (!yxRecordList.isEmpty()) {
+                    HistoryDataServiceImpl2.this.yxRecordDao.insertAll(yxRecordList);
+                    yxRecordList.clear();
+                }
+                if (!faultInsertList.isEmpty()) {
+                    HistoryDataServiceImpl2.this.faultRecordDao.insertAll(faultInsertList);
+                    faultInsertList.clear();
+                }
+                if (!faultUpdateList.isEmpty()) {
+                    HistoryDataServiceImpl2.this.faultRecordDao.updateAll(faultUpdateList);
+                    faultUpdateList.clear();
+                }
+                if (!offLimitsInsertList.isEmpty()) {
+                    HistoryDataServiceImpl2.this.offLimitsRecordDao.insertAll(offLimitsInsertList);
+                    offLimitsInsertList.clear();
+                }
+                if (!offLimitsUpdateList.isEmpty()) {
+                    HistoryDataServiceImpl2.this.offLimitsRecordDao.updateAll(offLimitsUpdateList);
+                    offLimitsUpdateList.clear();
+                }
+            }
+        }, 10, 10, TimeUnit.SECONDS);
+
+        // 历史数据最慢1分钟保存1次
+        executorService.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                if (!varGroupListMap.isEmpty()) {
+                    for (final Map.Entry<VarGroupEnum, List<VarGroupData>> entry : varGroupListMap.entrySet()) {
+                        HistoryDataServiceImpl2.this.varGroupDataDao.insertAll(entry.getValue());
+                    }
+                    varGroupListMap.clear();
+                }
+            }
+        }, 1, 1, TimeUnit.MINUTES);
+    }
 
     @Override
     public void saveYXData(final YxRecord record) {
@@ -149,7 +187,6 @@ public class HistoryDataServiceImpl2 implements HistoryDataService {
                 }
             }
         });
-        //varGroupDataDao.insert(data);
     }
 
     @Override

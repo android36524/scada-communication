@@ -3,7 +3,7 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:aop="http://www.springframework.org/schema/aop"
-	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:servletContext="http://www.springframework.org/schema/servletContext"
 	xmlns:jee="http://www.springframework.org/schema/jee"
 	xmlns:p="http://www.springframework.org/schema/p"
 	xmlns:tx="http://www.springframework.org/schema/tx"
@@ -12,7 +12,7 @@
     xmlns:cache="http://www.springframework.org/schema/cache"
     xmlns:util="http://www.springframework.org/schema/util"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
-		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/servletContext http://www.springframework.org/schema/servletContext/spring-servletContext-3.2.xsd
 		http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-3.2.xsd
 		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
 		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
@@ -26,12 +26,12 @@
 	<description>Spring公共配置 </description>
 
 	<!-- 使用annotation 自动注册bean, 并保证@Required、@Autowired的属性被注入 -->
-	<context:annotation-config/>
-    <context:component-scan
+	<servletContext:annotation-config/>
+    <servletContext:component-scan
             base-package="com.ht.scada.common.tag.service.impl, com.ht.scada.data.service.impl,
             com.ht.scada.communication, com.ht.scada.communication.cluser">
-        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
-    </context:component-scan>
+        <servletContext:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </servletContext:component-scan>
 	
 	<!-- Jpa Entity Manager 配置 : JDNI name for EntityManagerFactory is defined in src/main/resources/META-INF/persistence.xml -->
 <!--     <jee:jndi-lookup jndi-name="java:jboss/spring-quickstart/persistence" id="entityManagerFactory"
@@ -73,7 +73,7 @@
  	
 	<!-- production环境 -->
  	<beans profile="production">
- 		<context:property-placeholder ignore-unresolvable="true" location="classpath*:/application.properties" />	
+ 		<servletContext:property-placeholder ignore-unresolvable="true" location="classpath*:/application.properties" />
 		
 		<bean id="hibernateJpaVendorAdapter" class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
 			<property name="database" value="ORACLE" />
@@ -102,7 +102,7 @@
 	
 	<!-- local development环境 -->
 	<beans profile="development">
-		<context:property-placeholder ignore-resource-not-found="true"
+		<servletContext:property-placeholder ignore-resource-not-found="true"
 			location="classpath*:/application.properties,
           			  classpath*:/application.development.properties" />	
           			  
@@ -122,7 +122,7 @@
 	
 	<!-- functional test 环境 -->
 	<beans profile="functional">
-		<context:property-placeholder ignore-resource-not-found="true"
+		<servletContext:property-placeholder ignore-resource-not-found="true"
 			location="classpath*:/application.properties" />
           			  
 		<bean id="hibernateJpaVendorAdapter" class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
@@ -146,7 +146,7 @@
 	
 	<!-- unitValue test环境 -->
 	<beans profile="test">
-	 	<context:property-placeholder ignore-resource-not-found="true"
+	 	<servletContext:property-placeholder ignore-resource-not-found="true"
 			location="classpath*:/application.properties,
           			  classpath*:/application.test.properties" />	
 		

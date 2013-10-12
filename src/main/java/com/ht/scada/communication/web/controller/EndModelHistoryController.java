@@ -1,4 +1,4 @@
-package com.ht.scada.communication.web;
+package com.ht.scada.communication.web.controller;
 
 import com.ht.scada.common.tag.util.VarGroupEnum;
 import com.ht.scada.communication.CommunicationChannel;
@@ -8,24 +8,21 @@ import com.ht.scada.communication.entity.VarGroupData;
 import com.ht.scada.communication.model.EndTagWrapper;
 import com.ht.scada.communication.model.VarGroupWrapper;
 import org.joda.time.LocalDate;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.WebContext;
+import org.lime.guice.mvc.views.thymeleaf.annotations.ThymeleafView;
+import org.zdevra.guice.mvc.annotations.Controller;
+import org.zdevra.guice.mvc.annotations.Path;
 
-import javax.servlet.ServletContext;
+import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.*;
 
-public class EndModelHistoryController implements IGTVGController {
+@Controller
+@Singleton
+public class EndModelHistoryController {
 
-    public EndModelHistoryController() {
-        super();
-    }
 
-    public void process(
-            final HttpServletRequest request, final HttpServletResponse response,
-            final ServletContext servletContext, final TemplateEngine templateEngine)
-            throws Exception {
+    @Path("/endTagHistory") @ThymeleafView("endTagHistory")
+    public void index(HttpServletRequest request) throws Exception {
         String idxStr = request.getParameter("idx");
         if (idxStr == null) {
             idxStr = "0";
@@ -34,13 +31,12 @@ public class EndModelHistoryController implements IGTVGController {
         CommunicationChannel communicationChannel = CommunicationManager.getInstance().getChannelMap().get(idx);
         EndTagWrapper endTagWrapper = communicationChannel.getEndTagList().get(0);
 
-        WebContext ctx = new WebContext(request, response, servletContext, request.getLocale());
-        ctx.setVariable("date", new Date());
+        request.setAttribute("date", new Date());
 
         //log.debug("显示采集通道");
-        ctx.setVariable("channelIdx", idxStr);
-        ctx.setVariable("endCode", endTagWrapper.getEndTag().getCode());
-        ctx.setVariable("endTagWrapper", endTagWrapper);
+        request.setAttribute("channelIdx", idxStr);
+        request.setAttribute("endCode", endTagWrapper.getEndTag().getCode());
+        request.setAttribute("endTagWrapper", endTagWrapper);
 
         List<VarGroupWrapper> groupList = new ArrayList<>(endTagWrapper.getVarGroupWrapperMap().values());
         Collections.sort(groupList, new Comparator<VarGroupWrapper>() {
@@ -49,10 +45,10 @@ public class EndModelHistoryController implements IGTVGController {
                 return o1.getVarGroupInfo().getName().getValue().compareTo(o2.getVarGroupInfo().getName().getValue());  //To change body of implemented methods use File | Settings | File Templates.
             }
         });
-        ctx.setVariable("groupList", groupList);
-        ctx.setVariable("idx", idx);
+        request.setAttribute("groupList", groupList);
+        request.setAttribute("idx", idx);
         for (VarGroupWrapper varGroupWrapper : endTagWrapper.getVarGroupWrapperMap().values()) {
-            ctx.setVariable("varGroupWrapper", varGroupWrapper);
+            request.setAttribute("varGroupWrapper", varGroupWrapper);
             break;
         }
 
@@ -63,7 +59,7 @@ public class EndModelHistoryController implements IGTVGController {
             LocalDate localDate = LocalDate.parse(dateInput);
 
             VarGroupWrapper varGroupWrapper = endTagWrapper.getVarGroupWrapperMap().get(varGroupEnum);
-            ctx.setVariable("varGroupWrapper", varGroupWrapper);
+            request.setAttribute("varGroupWrapper", varGroupWrapper);
 
             long count = DataBaseManager.getInstance().getHistoryDataService()
                     .getVarGroupDataCount(endTagWrapper.getEndTag().getCode(), varGroupEnum,
@@ -79,18 +75,17 @@ public class EndModelHistoryController implements IGTVGController {
             List<VarGroupData> list =  DataBaseManager.getInstance().getHistoryDataService()
                     .getVarGroupData(endTagWrapper.getEndTag().getCode(), varGroupEnum,
                             localDate.toDate(), localDate.plusDays(1).toDate(), pageIndex * pageSize, pageSize);
-            ctx.setVariable("pageSize", pageSize);
-            ctx.setVariable("pageIndex", pageIndexParam);
+            request.setAttribute("pageSize", pageSize);
+            request.setAttribute("pageIndex", pageIndexParam);
             if (count % pageSize == 0) {
-                ctx.setVariable("pageCount", count / pageSize);
+                request.setAttribute("pageCount", count / pageSize);
             } else {
-                ctx.setVariable("pageCount", count / pageSize + 1);
+                request.setAttribute("pageCount", count / pageSize + 1);
             }
-            ctx.setVariable("dataList", list);
-            ctx.setVariable("date", localDate.toDate());
+            request.setAttribute("dataList", list);
+            request.setAttribute("date", localDate.toDate());
         }
 
-        templateEngine.process("endTagHistory", ctx, response.getWriter());
     }
 
 }

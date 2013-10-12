@@ -1,4 +1,4 @@
-package com.ht.scada.communication.web;
+package com.ht.scada.communication.web.servlet;
 
 import com.ht.scada.common.tag.util.VarSubTypeEnum;
 import com.ht.scada.communication.CommunicationChannel;
@@ -18,20 +18,20 @@ import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import javax.inject.Singleton;
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.*;
 import java.io.IOException;
 
-@WebServlet(urlPatterns = {"/gt"})
+//@WebServlet(urlPatterns = {"/gt"})
+@Singleton
 public class SGTServlet extends HttpServlet {
-	
-	@Override
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-			throws ServletException, IOException {
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         float weiyi[] = null;
         float dianliu[] = null;
         float gonglv[] = null;
@@ -58,7 +58,7 @@ public class SGTServlet extends HttpServlet {
         String yLabel = "载荷 千牛";
         String title = " 地面示功图";
 
-        for (YcTagVar ycTagVar : endTag.getYcVarList()) {
+        for (YcTagVar ycTagVar : endTag.getYcArrayVarList()) {
             if (ycTagVar.getLastArrayValue() != null) {
                 if (ycTagVar.getTpl().getSubType() == VarSubTypeEnum.WEI_YI_ARRAY) {
                     weiyi = ycTagVar.getLastArrayValue();
@@ -101,7 +101,7 @@ public class SGTServlet extends HttpServlet {
         JFreeChart jfreechart = createChart(categorydataset, title, yLabel);
         ChartUtilities.writeChartAsJPEG(resp.getOutputStream(), jfreechart, width, height);
         resp.getOutputStream().close();
-	}
+    }
 
     private void createTestData() {
 

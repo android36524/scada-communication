@@ -1,7 +1,7 @@
 package com.ht.scada.communication.service.impl;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import com.google.common.collect.Lists;
 import com.google.inject.Singleton;
 import com.ht.scada.communication.entity.FaultRecord;
 import com.ht.scada.communication.entity.OffLimitsRecord;
@@ -15,7 +15,12 @@ import redis.clients.jedis.Pipeline;
 
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author 薄成文
@@ -25,6 +30,13 @@ import java.util.Map;
 public class RealtimeDataServiceImpl implements RealtimeDataService {
     private static final Logger log = LoggerFactory.getLogger(RealtimeDataServiceImpl.class);
 
+    private static final int BATCH_UPDATE_SIZE = 20;
+
+    private ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    private ExecutorService dbExecutorService;
+
+    private List<RedisHashMapData> redisDataList = new ArrayList<>();
+    private List<RedisPublishData> redisPublishDataList = new ArrayList<>();
     /**
      * 遥信变位广播通道名称
      */
@@ -47,6 +59,15 @@ public class RealtimeDataServiceImpl implements RealtimeDataService {
     public RealtimeDataServiceImpl(JedisPool pool) {
         this.pool = pool;
 
+        //dbExecutorService = Executors.newFixedThreadPool(Config.INSTANCE.getRedisMaxActive());
+
+        // 最慢3s更新一次实时数据
+//        executorService.scheduleAtFixedRate(new Runnable() {
+//            @Override
+//            public void run() {
+//                update();
+//            }
+//        }, 5, 5, TimeUnit.SECONDS);
 /*		List<JedisShardInfo> jdsInfoList = new ArrayList<JedisShardInfo>(2);
 
 		String hostA = "127.0.0.1";
@@ -66,90 +87,273 @@ public class RealtimeDataServiceImpl implements RealtimeDataService {
 
     @Override
     public void putValus(Map<String, String> kvMap) {
-        Jedis jedis = pool.getResource();
+        Jedis jedis = null;
         try {
-            Pipeline pipeline = jedis.pipelined();
-            for (Map.Entry<String, String> entry : kvMap.entrySet()) {
-                pipeline.set(entry.getKey(), entry.getValue());
+            jedis = pool.getResource();
+            if(jedis != null) {
+                Pipeline pipeline = jedis.pipelined();
+                for (Map.Entry<String, String> entry : kvMap.entrySet()) {
+                    pipeline.set(entry.getKey(), entry.getValue());
+                }
+                pipeline.sync();
             }
-            pipeline.sync();
+        } catch (Exception e){
+            e.printStackTrace();
         } finally {
-            pool.returnResource(jedis);
+            if (pool != null) {
+                pool.returnResource(jedis);
+            }
         }
     }
 
     @Override
     public void putValue(String k, String v) {
-        Jedis jedis = pool.getResource();
+        Jedis jedis = null;
         try {
-            jedis.set(k, v);
+            jedis = pool.getResource();
+            if(jedis != null) {
+                jedis.set(k, v);
+            }
+        } catch (Exception e){
+            e.printStackTrace();
         } finally {
-            pool.returnResource(jedis);
+            if (pool != null) {
+                pool.returnResource(jedis);
+            }
         }
     }
 
     @Override
     public void setEndModelGroupVar(String code, Map<String, String> groupVarMap) {
-        Jedis jedis = pool.getResource();
+        Jedis jedis = null;
         try {
-            jedis.hmset(code+":GROUP", groupVarMap);
+            jedis = pool.getResource();
+            if(jedis != null) {
+                jedis.hmset(code+":GROUP", groupVarMap);
+            }
+        } catch (Exception e){
+            e.printStackTrace();
         } finally {
-            pool.returnResource(jedis);
+            if (pool != null) {
+                pool.returnResource(jedis);
+            }
         }
     }
 
     @Override
     public void updateEndModel(String code, Map<String, String> kvMap) {
-        Jedis jedis = pool.getResource();
+        final RedisHashMapData data = new RedisHashMapData(code, kvMap);
+
+        update(data);
+//        executorService.execute(new Runnable() {
+//            @Override
+//            public void run() {
+//                redisDataList.add(data);
+//                if (redisDataList.size() + redisPublishDataList.size() > BATCH_UPDATE_SIZE) {
+//                    update();
+//                }
+//            }
+//        });
+    }
+
+    private void update(final RedisHashMapData data) {
+        Jedis jedis = null;
         try {
-            jedis.hmset(code, kvMap);
+            jedis = pool.getResource();
+            if(jedis != null) {
+                jedis.hmset(data.code, data.kvMap);
+            }
+        } catch (Exception e){
+            e.printStackTrace();
         } finally {
-            pool.returnResource(jedis);
+            if (pool != null) {
+                pool.returnResource(jedis);
+            }
         }
+    }
+
+    private void publish(final RedisPublishData data) {
+        Jedis jedis = null;
+        try {
+            jedis = pool.getResource();
+            if(jedis != null) {
+                jedis.publish(data.channel, data.message);
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+        } finally {
+            if (pool != null) {
+                pool.returnResource(jedis);
+            }
+        }
+    }
+
+    private void update() {
+
+        final List<RedisHashMapData> dataList = Lists.newArrayList(redisDataList);
+        final List<RedisPublishData> publishDataList = Lists.newArrayList(redisPublishDataList);
+        redisDataList.clear();
+        redisPublishDataList.clear();
+
+        dbExecutorService.execute(new Runnable() {
+            @Override
+            public void run() {
+
+                Jedis jedis = null;
+                try {
+                    jedis = pool.getResource();
+                    if(jedis != null) {
+
+                        Pipeline pipeline = jedis.pipelined();
+                        for (RedisHashMapData data : dataList) {
+                            pipeline.hmset(data.code, data.kvMap);
+                        }
+                        for (RedisPublishData data : publishDataList) {
+                            pipeline.publish(data.channel, data.message);
+                        }
+                        pipeline.sync();
+                    }
+                } catch (Exception e){
+                    e.printStackTrace();
+                } finally {
+                    if (pool != null) {
+                        pool.returnResource(jedis);
+                    }
+                }
+            }
+        });
     }
 
     @Override
     public void updateEndModelYcArray(String code, Map<String, String> kvMap) {
-        updateEndModel(code+":ARRAY", kvMap);
+
+        final RedisHashMapData data = new RedisHashMapData(code+":ARRAY", kvMap);
+        update(data);
+//        executorService.execute(new Runnable() {
+//            @Override
+//            public void run() {
+//                redisDataList.add(data);
+//                if (redisDataList.size() + redisPublishDataList.size() > BATCH_UPDATE_SIZE) {
+//                    update();
+//                }
+//            }
+//        });
     }
 
     @Override
-    public void faultOccured(FaultRecord record) {
+    public void faultOccured(final FaultRecord record) {
         log.info("故障报警:{} {}", record.getCode(), record.getName());
-        publish(FAULT_CHANNEL, JSON.toJSONString(record));
+        final RedisPublishData data = new RedisPublishData(FAULT_CHANNEL, JSON.toJSONString(record));
+        publish(data);
+//        executorService.execute(new Runnable() {
+//            @Override
+//            public void run() {
+//                redisPublishDataList.add(data);
+//                if (redisPublishDataList.size() > BATCH_UPDATE_SIZE) {
+//                    update();
+//                }
+//            }
+//        });
     }
 
     @Override
-    public void faultResumed(FaultRecord record) {
-        publish(FAULT_CHANNEL, JSONObject.toJSONString(record));
+    public void faultResumed(final FaultRecord record) {
+        final RedisPublishData data = new RedisPublishData(FAULT_CHANNEL, JSON.toJSONString(record));
+        publish(data);
+//        executorService.execute(new Runnable() {
+//            @Override
+//            public void run() {
+//                redisPublishDataList.add(data);
+//                if (redisPublishDataList.size() > BATCH_UPDATE_SIZE) {
+//                    update();
+//                }
+//            }
+//        });
     }
 
     @Override
-    public void offLimitsOccured(OffLimitsRecord record) {
-        publish(OFF_LIMITS_CHANNEL, JSONObject.toJSONString(record));
+    public void offLimitsOccured(final OffLimitsRecord record) {
+        final RedisPublishData data = new RedisPublishData(OFF_LIMITS_CHANNEL, JSON.toJSONString(record));
+        publish(data);
+//        executorService.execute(new Runnable() {
+//            @Override
+//            public void run() {
+//                redisPublishDataList.add(data);
+//                if (redisPublishDataList.size() > BATCH_UPDATE_SIZE) {
+//                    update();
+//                }
+//            }
+//        });
     }
 
     @Override
-    public void offLimitsResumed(OffLimitsRecord record) {
-        publish(OFF_LIMITS_CHANNEL, JSONObject.toJSONString(record));
+    public void offLimitsResumed(final OffLimitsRecord record) {
+        final RedisPublishData data = new RedisPublishData(OFF_LIMITS_CHANNEL, JSON.toJSONString(record));
+        publish(data);
+//        executorService.execute(new Runnable() {
+//            @Override
+//            public void run() {
+//                redisPublishDataList.add(data);
+//                if (redisPublishDataList.size() > BATCH_UPDATE_SIZE) {
+//                    update();
+//                }
+//            }
+//        });
     }
 
     @Override
-    public void yxChanged(YxRecord record) {
-        publish(YX_CHANGE_CHANNEL, JSONObject.toJSONString(record));
+    public void yxChanged(final YxRecord record) {
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                redisPublishDataList.add(new RedisPublishData(YX_CHANGE_CHANNEL, JSON.toJSONString(record)));
+                if (redisPublishDataList.size() > BATCH_UPDATE_SIZE) {
+                    update();
+                }
+            }
+        });
     }
 
-    private void publish(String channel, String message) {
-        Jedis jedis = pool.getResource();
+/*    private void publish(String channel, String message) {
+        Jedis jedis = null;
         try {
-            jedis.publish(channel, message);
+            jedis = pool.getResource();
+            if(jedis != null) {
+                jedis.publish(channel, message);
+            }
+        } catch (Exception e){
+            e.printStackTrace();
         } finally {
-            pool.returnResource(jedis);
+            if (pool != null) {
+                pool.returnResource(jedis);
+            }
         }
-    }
+    }*/
 
     @PreDestroy
 	public void destroy() {
 		pool.destroy();
 	}
+
+    private static class RedisHashMapData {
+        private String code;
+        //private Map<String, String> kvMap = new HashMap<>();
+        private Map<String, String> kvMap;
+
+        private RedisHashMapData(String code, Map<String, String> kvMap) {
+            this.code = code;
+            this.kvMap = kvMap;
+            //this.kvMap.putAll(kvMap);
+        }
+    }
+
+    private static class RedisPublishData {
+        private String channel;
+        private String message;
+
+        private RedisPublishData(String channel, String message) {
+            this.channel = channel;
+            this.message = message;
+        }
+    }
 }

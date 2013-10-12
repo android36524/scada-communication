@@ -1,10 +1,11 @@
 package com.ht.db.util;
 
 import com.google.inject.Singleton;
+import com.ht.scada.communication.Config;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.*;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.sql.DataSource;
@@ -12,6 +13,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /** 
 * 调用Apache Commons DBUtil组件的数据库操作类 
@@ -27,15 +30,22 @@ import java.util.Map;
 * @version 1.0 2009-07-29 
 */
 @Singleton
-public class DbUtilsTemplate { 
+public class DbUtilsTemplate {
+
+    private static final Logger log = LoggerFactory.getLogger(DbUtilsTemplate.class);
 
     private final DataSource dataSource;
-    private QueryRunner queryRunner; 
-    private static final Log LOG = LogFactory.getLog(DbUtilsTemplate.class);
+    private QueryRunner queryRunner;
+    private ExecutorService dbExecutorService;
 
     @Inject
     public DbUtilsTemplate(DataSource dataSource) {
         this.dataSource = dataSource;
+        dbExecutorService = Executors.newFixedThreadPool(Config.INSTANCE.getConfig().getInt("jdbc.maxActive", 200) - 50);
+    }
+
+    public ExecutorService getDbExecutorService() {
+        return dbExecutorService;
     }
 
     /**
@@ -54,7 +64,7 @@ public class DbUtilsTemplate {
                 affectedRows = queryRunner.update(sql, params); 
             } 
         } catch (SQLException e) { 
-            LOG.error("Error occured while attempting to update data", e); 
+            log.error("Error occured while attempting to update data", e);
         } 
         return affectedRows; 
     } 
@@ -71,7 +81,7 @@ public class DbUtilsTemplate {
         try { 
             affectedRows = queryRunner.batch(sql, params); 
         } catch (SQLException e) { 
-            LOG.error("Error occured while attempting to batch update data", e); 
+            log.error("Error occured while attempting to batch update data", e);
         } 
         return affectedRows; 
     }     
@@ -93,7 +103,7 @@ public class DbUtilsTemplate {
                 list = queryRunner.query(sql, new MapListHandler(), params);
             } 
         } catch (SQLException e) { 
-            LOG.error("Error occured while attempting to query data", e); 
+            log.error("Error occured while attempting to query data", e);
         } 
         return list; 
     } 
@@ -116,7 +126,7 @@ public class DbUtilsTemplate {
                 list = (List<T>) queryRunner.query(sql, new BeanListHandler(entityClass, new MyRowProcessor()), params);
             } 
         } catch (SQLException e) { 
-            LOG.error("Error occured while attempting to query data", e); 
+            log.error("Error occured while attempting to query data", e);
         } 
         return list; 
     } 
@@ -139,7 +149,7 @@ public class DbUtilsTemplate {
                 object = queryRunner.query(sql, new BeanHandler(entityClass), params); 
             } 
         } catch (SQLException e) { 
-            LOG.error("Error occured while attempting to query data", e); 
+            log.error("Error occured while attempting to query data", e);
         } 
         return (T) object; 
     } 
@@ -161,7 +171,7 @@ public class DbUtilsTemplate {
                 map = queryRunner.query(sql, new MapHandler(), params);
             } 
         } catch (SQLException e) { 
-            LOG.error("Error occured while attempting to query data", e); 
+            log.error("Error occured while attempting to query data", e);
         } 
         return map; 
     }
@@ -183,7 +193,7 @@ public class DbUtilsTemplate {
                 object = queryRunner.query(sql, new ScalarHandler<T>(columnName), params);
             } 
         } catch (SQLException e) { 
-            LOG.error("Error occured while attempting to query data", e); 
+            log.error("Error occured while attempting to query data", e);
         } 
         return object; 
     } 
@@ -206,7 +216,7 @@ public class DbUtilsTemplate {
                 object = queryRunner.query(sql, new ScalarHandler<T>(columnIndex), params);
             } 
         } catch (SQLException e) { 
-            LOG.error("Error occured while attempting to query data", e); 
+            log.error("Error occured while attempting to query data", e);
         } 
         return object; 
     } 

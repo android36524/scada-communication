@@ -29,7 +29,7 @@ public interface RealtimeDataService {
     void setEndModelGroupVar(String code, Map<String, String> groupVarMap);
 
     /**
-     *批量更新监控对象实时数据(遥测、遥信、遥脉)
+     * 批量更新监控对象实时数据(遥测、遥信、遥脉)
      * @param code 监控对象编号
      * @param kvMap
      */

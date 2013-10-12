@@ -3,6 +3,9 @@ package com.ht.scada.communication;
 import co.mewf.sqlwriter.Queries;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.ht.db.util.DbUtilsTemplate;
 import com.ht.scada.common.tag.util.DataType;
 import com.ht.scada.common.tag.util.VarGroupEnum;
 import com.ht.scada.common.tag.util.VarSubTypeEnum;
@@ -12,7 +15,7 @@ import com.ht.scada.communication.entity.ChannelInfo;
 import com.ht.scada.communication.entity.FaultRecord;
 import com.ht.scada.communication.entity.OffLimitsRecord;
 import com.ht.scada.communication.entity.TagVarTpl;
-import com.ht.scada.communication.web.MyGuiceApplicationListener;
+import com.ht.scada.communication.guice.PersistModule;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 
@@ -25,12 +28,23 @@ import java.util.Map;
 
 public class Test {
 
-	/**
+    private DbUtilsTemplate dbUtilsTemplate;
+    private Injector injector;
+
+    /**
 	 * @param args
 	 * @throws InterruptedException 
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws InterruptedException, IOException {
+        new Test();
+    }
+
+    public Test() {
+        injector = Guice.createInjector(new PersistModule());
+        dbUtilsTemplate = injector.getInstance(DbUtilsTemplate.class);
+
+
         String s = LocalDateTime.now().toString("yyyy-MM-dd HH:mm:ss");
         System.out.println(s);
         System.out.println(new DecimalFormat("#").format(Float.MAX_VALUE));
@@ -56,10 +70,9 @@ public class Test {
         sqlBuilder.append("`datetime` DATETIME NULL,\n");
         sqlBuilder.append("PRIMARY KEY (`id`)\n");
         sqlBuilder.append(")");
-        DataBaseManager.getInstance().init();
         //System.out.println(sqlBuilder.toString());
         //DataBaseManager.getInstance().getDbTemplate().update(sqlBuilder.toString());
-        List<Map<String, Object>> dataList = DataBaseManager.getInstance().getDbTemplate().find("select * from t_dian_yc");
+        List<Map<String, Object>> dataList = dbUtilsTemplate.find("select * from t_dian_yc");
 
         for (Map<String, Object> map : dataList) {
             System.out.println(map);
@@ -67,7 +80,7 @@ public class Test {
             for (Map.Entry<String, Object> entry : map.entrySet()) {
                 System.out.println(entry.getKey());
                 if (entry.getValue() != null)
-                System.out.println(entry.getValue().getClass());
+                    System.out.println(entry.getValue().getClass());
             }
             System.out.println();
         }
@@ -125,8 +138,7 @@ public class Test {
         //redisTest();
     }
 
-    private static void realTimeServiceTest() {
-        DataBaseManager.getInstance().init();
+    private void realTimeServiceTest() {
 
         Map<String, String> varGroupMap = Maps.newHashMap(ImmutableMap.<String, String>of(VarGroupEnum.DIAN_YC.toString(), "i_a,i_b,i_c,test", VarGroupEnum.DIAN_YM.toString(), "numberText"));
         DataBaseManager.getInstance().getRealtimeDataService().setEndModelGroupVar("codeTest", varGroupMap);
@@ -136,8 +148,7 @@ public class Test {
         DataBaseManager.getInstance().getRealtimeDataService().updateEndModel("codeTest", varValueMap);
     }
 
-    private static void historyServiceTest() {
-        DataBaseManager.getInstance().init();
+    private void historyServiceTest() {
 
 //        VarGroupData data = new VarGroupData();
 //        data.setCode("001");
@@ -150,15 +161,15 @@ public class Test {
 
     }
 
-    private static void ttt(int i) {
+    private void ttt(int i) {
         i++;
         System.out.println(i);
     }
 
-    private static void dbTest2() {
-        ChannelInfoDao channelInfoDao = MyGuiceApplicationListener.injector.getInstance(ChannelInfoDao.class);
+    private void dbTest2() {
+        ChannelInfoDao channelInfoDao = injector.getInstance(ChannelInfoDao.class);
 
-        List<ChannelInfo> list = DataBaseManager.getInstance().getDbTemplate().find(ChannelInfo.class, "select * from T_Acquisition_Channel where update_time < ?", new Date());
+        List<ChannelInfo> list = dbUtilsTemplate.find(ChannelInfo.class, "select * from T_Acquisition_Channel where update_time < ?", new Date());
         //List<ChannelInfo> list = channelInfoDao.getAll();
         for (ChannelInfo channelInfo : list) {
             System.out.println(channelInfo.getUpdateTime());
@@ -166,7 +177,7 @@ public class Test {
 
     }
 
-    private static void dbCreateData() {
+    private void dbCreateData() {
         // INSERT INTO T_Tag_Cfg_Tpl(tpl_name, var_name, tag_name, var_group, var_type, sub_type, fun_code, data_id, byte_offset, bit_offset, byte_len, data_type, base_value, coef_value, maxValue, minValue, unitValue, triggerName, varStorage) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         String sql = Queries.insert(TagVarTpl.class).sql();
         System.out.println(sql);
@@ -384,13 +395,13 @@ public class Test {
                     ycStart++;
                     break;
             }
-            DataBaseManager.getInstance().getDbTemplate().update(sql, "变量模板1",
+            dbUtilsTemplate.update(sql, "变量模板1",
                     subType.toString().toLowerCase(), subType.getValue(), varGroupEnum.toString(), varTypeEnum.toString(), subType.toString(),
                     -1, dataId, 0, -1, byteLen, dataType.toString(), 0, 1, null, null, null, null, null);
         }
     }
 
-    private static void dbTest() {
+    private void dbTest() {
         //String sql = Queries.insert(OffLimitsRecord.class).columns("id", "code", "name", "info", "value", "threshold", "type", "actionTime").sql();
         String sql = Queries.insert(OffLimitsRecord.class).sql();
         System.out.println(sql);
@@ -410,7 +421,7 @@ public class Test {
 
     }
 
-    private static void redisTest() {
+    private void redisTest() {
         FaultRecord record = new FaultRecord();
         record.setActionTime(new Date());
         record.setCode("编号");

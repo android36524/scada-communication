@@ -5,7 +5,7 @@ import com.ht.scada.communication.entity.ChannelInfo;
 import com.ht.scada.communication.iec104.IEC104Channel;
 import com.ht.scada.communication.modbus.ModbusTcpChannel;
 import com.ht.scada.communication.model.EndTagWrapper;
-import com.ht.scada.communication.web.MyGuiceApplicationListener;
+import com.ht.scada.communication.web.MyWebAppContextListener;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +58,7 @@ public class CommunicationManager implements IService {
 	 * @throws Exception
 	 */
 	public void init() throws Exception {
-        channelInfoDao = MyGuiceApplicationListener.injector.getInstance(ChannelInfoDao.class);
+        channelInfoDao = MyWebAppContextListener.injector.getInstance(ChannelInfoDao.class);
         TagCfgManager.getInstance().init();
 		initChannels();
 	}
@@ -111,7 +111,7 @@ public class CommunicationManager implements IService {
             if (nioEventLoopGroup != null && !nioEventLoopGroup.isShutdown()) {
                 nioEventLoopGroup.shutdownGracefully();
             }
-            nioEventLoopGroup = new NioEventLoopGroup();
+            nioEventLoopGroup = new NioEventLoopGroup(Config.INSTANCE.getConfig().getInt("nio.threadSize", 200));
             init();
             running = true;
         } catch (Exception e) {
@@ -139,7 +139,8 @@ public class CommunicationManager implements IService {
         /*************** test ***************/
         // TODO: 测试用通道,正式发布时删除
 /*        ChannelInfo channelInfo = channels.get(0);
-        for (int i=6; i < 2000; i++) {
+        int channelLen = Config.INSTANCE.getConfig().getInt("test.channelSize", 500);
+        for (int i=6; i < channelLen; i++) {
             ChannelInfo c = new ChannelInfo();
             c.setName("RTU-" + i);
             c.setFrames(channelInfo.getFrames());

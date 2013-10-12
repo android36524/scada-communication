@@ -63,6 +63,10 @@
             <input type="submit" value="查询" />
     </div>
 
+    <div class="msg-info" style="margin: 5px;" th:if="${#lists.isEmpty(dataList)}">
+        暂无遥信变位记录
+    </div>
+
     <div style="margin: 5px 0;" th:if="${not #lists.isEmpty(dataList)}">
         <table class="dataintable">
             <tr>

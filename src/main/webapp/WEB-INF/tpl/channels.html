@@ -31,6 +31,9 @@
                 <th>端口信息</th>
                 <th>数据监测</th>
                 <th>历史数据</th>
+                <th>遥信变位</th>
+                <th>遥测越限</th>
+                <th>故障报警</th>
             </tr>
         </thead>
         <tbody id="tbContent">
@@ -42,6 +45,9 @@
             <td th:text="${channel.portInfo}"></td>
             <td><a href="endTag.html" th:href="@{/endTag(idx=${channel.idx})}" target="_blank">打开</a></td>
             <td><a href="endTagHistory.html" th:href="@{/endTagHistory(idx=${channel.idx})}" target="_blank">打开</a></td>
+            <td><a href="yxRecord.html" th:href="@{/yxRecord(idx=${channel.idx})}" target="_blank">打开</a></td>
+            <td><a href="faultRecord.html" th:href="@{/faultRecord(idx=${channel.idx})}" target="_blank">打开</a></td>
+            <td><a href="offLimitsRecord.html" th:href="@{/offLimitsRecord(idx=${channel.idx})}" target="_blank">打开</a></td>
         </tr>
         </tbody>
     </table>

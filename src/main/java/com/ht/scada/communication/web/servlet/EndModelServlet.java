@@ -1,39 +1,33 @@
-package com.ht.scada.communication.web;
+package com.ht.scada.communication.web.servlet;
 
 import com.ht.scada.communication.CommunicationChannel;
 import com.ht.scada.communication.CommunicationManager;
 import com.ht.scada.communication.model.EndTagWrapper;
 import com.ht.scada.communication.model.VarGroupWrapper;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.WebContext;
 
-import javax.servlet.ServletContext;
+import javax.inject.Singleton;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.*;
 
-public class EndModelController implements IGTVGController {
+@Singleton
+public class EndModelServlet extends TymeleafRenderServlet {
 
-    public EndModelController() {
-        super();
-    }
-
-    public void process(
-            final HttpServletRequest request, final HttpServletResponse response,
-            final ServletContext servletContext, final TemplateEngine templateEngine)
-            throws Exception {
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
         String idxStr = request.getParameter("idx");
         int idx = Integer.parseInt(idxStr);
         CommunicationChannel communicationChannel = CommunicationManager.getInstance().getChannelMap().get(idx);
         EndTagWrapper endTagWrapper = communicationChannel.getEndTagList().get(0);
 
-        WebContext ctx = new WebContext(request, response, servletContext, request.getLocale());
-        ctx.setVariable("today", Calendar.getInstance());
+        request.setAttribute("today", Calendar.getInstance());
 
         //log.debug("显示采集通道");
-        ctx.setVariable("channelIdx", idxStr);
-        ctx.setVariable("endCode", endTagWrapper.getEndTag().getCode());
-        ctx.setVariable("endTagWrapper", endTagWrapper);
+        request.setAttribute("channelIdx", idxStr);
+        request.setAttribute("endCode", endTagWrapper.getEndTag().getCode());
+        request.setAttribute("endTagWrapper", endTagWrapper);
 
         List<VarGroupWrapper> groupList = new ArrayList<>(endTagWrapper.getVarGroupWrapperMap().values());
         Collections.sort(groupList, new Comparator<VarGroupWrapper>() {
@@ -42,10 +36,8 @@ public class EndModelController implements IGTVGController {
                 return o1.getVarGroupInfo().getName().getValue().compareTo(o2.getVarGroupInfo().getName().getValue());  //To change body of implemented methods use File | Settings | File Templates.
             }
         });
-        ctx.setVariable("groupList", groupList);
-
-        String tpl = "endTag";
-        templateEngine.process(tpl, ctx, response.getWriter());
+        request.setAttribute("groupList", groupList);
+        render.rend(request, resp, "endTag");
     }
 
 }

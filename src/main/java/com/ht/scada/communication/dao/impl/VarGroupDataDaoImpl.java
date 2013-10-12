@@ -59,11 +59,17 @@ public class VarGroupDataDaoImpl extends BaseDaoImpl<VarGroupData> implements Va
 
         String sql = sqlBuilder.toString();
         log.debug("插入VarGroupData数据:{}", sql);
-        getDbUtilsTemplate().update(sql, varGroupData.getCode(), varGroupData.getDatetime());
+        dbUtilsTemplate.update(sql, varGroupData.getCode(), varGroupData.getDatetime());
     }
 
-    @Override
-    public void insertAll(List<VarGroupData> varGroupDataList) {
+//    @Override
+
+    /**
+     * 采用JDBC批量提交API
+     * @param varGroupDataList
+     */
+    @Deprecated
+    public void insertAll2(List<VarGroupData> varGroupDataList) {
         //To change body of implemented methods use File | Settings | File Templates.
         if (varGroupDataList.isEmpty()) {
             return;
@@ -98,6 +104,7 @@ public class VarGroupDataDaoImpl extends BaseDaoImpl<VarGroupData> implements Va
 
         List<String> valuesList  = new ArrayList<>();
         for (VarGroupData data : varGroupDataList) {
+
             StringBuilder valuesBuilder = new StringBuilder();
             valuesBuilder.append("(");
 
@@ -149,18 +156,86 @@ public class VarGroupDataDaoImpl extends BaseDaoImpl<VarGroupData> implements Va
             }
 
             Joiner.on(",").appendTo(valuesBuilder, values);
-
-
             valuesBuilder.append(")");
 
             valuesList.add(valuesBuilder.toString());
-
         }
         Joiner.on(",\n").appendTo(sqlBuilder, valuesList);
 
-        String sql = sqlBuilder.toString();
-        log.debug("插入VarGroupData数据:\n{}", sql);
-        //getDbUtilsTemplate().update(sql);
+        final String sql = sqlBuilder.toString();
+        log.debug("写入 {} 数据:\n{}", varGroupData.getGroup().getValue(), sql);
+
+        dbUtilsTemplate.getDbExecutorService().execute(new Runnable() {
+            @Override
+            public void run() {
+                dbUtilsTemplate.update(sql);
+            }
+        });
+    }
+
+    @Override
+    public void insertAll(List<VarGroupData> varGroupDataList) {
+        //To change body of implemented methods use File | Settings | File Templates.
+        if (varGroupDataList.isEmpty()) {
+            return;
+        }
+
+        VarGroupData varGroupData = varGroupDataList.get(0);
+
+        VarGroupDataTableField varGroupDataTableField = varGroupDataTableMap.get(varGroupData.getGroup());
+        int fieldsSize = 2 + varGroupDataTableField.ycList.size() + varGroupDataTableField.ycArrayList.size()
+                + varGroupDataTableField.yxList.size() + varGroupDataTableField.ymList.size();
+        final Object[][] params = new Object[varGroupDataList.size()][fieldsSize];
+        int i = 0;
+        for (VarGroupData data : varGroupDataList) {
+            int j = 0;
+            params[i][j] = data.getCode();
+            j++;
+            params[i][j] = new Timestamp(data.getDatetime().getTime());
+            j++;
+            if (!varGroupDataTableField.ycList.isEmpty()) {
+                for (String field : varGroupDataTableField.ycList) {
+                    params[i][j] = data.getYcValueMap().get(field);
+                    j++;
+                }
+            }
+            if (!varGroupDataTableField.ycArrayList.isEmpty()) {
+                for (String field : varGroupDataTableField.ycArrayList) {
+                    float[] v = data.getArrayValueMap().get(field);
+                    if (v != null) {
+                        params[i][j] =  Joiner.on(",").join(ArrayUtils.toObject(v));
+                    }
+                    j++;
+                }
+            }
+            if (!varGroupDataTableField.yxList.isEmpty()) {
+                for (String field : varGroupDataTableField.yxList) {
+                    Boolean v = data.getYxValueMap().get(field);
+                    if (v != null) {
+                        params[i][j] = v ? 1 : 0;
+                    }
+                    j++;
+                }
+            }
+            if (!varGroupDataTableField.ymList.isEmpty()) {
+                for (String field : varGroupDataTableField.ymList) {
+                    params[i][j] = data.getYmValueMap().get(field);
+                    j++;
+                }
+            }
+            i++;
+        }
+
+
+        final String sql = varGroupDataTableField.getInsertSql();
+        log.debug("写入 {} 数据:\n{}", varGroupData.getGroup().getValue(), sql);
+
+        dbUtilsTemplate.getDbExecutorService().execute(new Runnable() {
+            @Override
+            public void run() {
+                dbUtilsTemplate.batchUpdate(sql, params);
+            }
+        });
     }
 
     @Override
@@ -214,6 +289,7 @@ public class VarGroupDataDaoImpl extends BaseDaoImpl<VarGroupData> implements Va
         sqlBuilder.append("`id` INT(10) NOT NULL AUTO_INCREMENT, \n");
 
         VarGroupDataTableField varGroupDataTableField = new VarGroupDataTableField();
+        varGroupDataTableField.tableName = tableName;
         varGroupDataTableMap.put(varGroup, varGroupDataTableField);
 
         for (String name : varGroupTable.getYcVarList()) {
@@ -310,10 +386,58 @@ public class VarGroupDataDaoImpl extends BaseDaoImpl<VarGroupData> implements Va
         return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
+    /**
+     * 分组数据组字段
+     */
     private static class VarGroupDataTableField {
         private List<String> ycList = new ArrayList<>();
         private List<String> ymList = new ArrayList<>();
         private List<String> yxList = new ArrayList<>();
         private List<String> ycArrayList = new ArrayList<>();
+        private String tableName;
+        private String insertSql = null;
+
+        private String getInsertSql() {
+            if (insertSql == null) {
+                generateInsertSql();
+            }
+            return insertSql;
+        }
+
+        private void generateInsertSql() {
+
+            StringBuilder sqlBuilder = new StringBuilder();
+            sqlBuilder.append("insert into ").append(tableName).append(" (code,datetime");
+
+            if (!ycList.isEmpty()) {
+                sqlBuilder.append(",");
+                Joiner.on(",").appendTo(sqlBuilder, ycList);
+            }
+            if (!ycArrayList.isEmpty()) {
+                sqlBuilder.append(",");
+                Joiner.on(",").appendTo(sqlBuilder, ycArrayList);
+            }
+            if (!yxList.isEmpty()) {
+                sqlBuilder.append(",");
+                Joiner.on(",").appendTo(sqlBuilder, yxList);
+            }
+            if (!ymList.isEmpty()) {
+                sqlBuilder.append(",");
+                Joiner.on(",").appendTo(sqlBuilder, ymList);
+            }
+            sqlBuilder.append(") values \n (");
+
+            int fieldsSize = 2 + ycList.size() + ycArrayList.size()
+                    + yxList.size() + ymList.size();
+            List<String> list = new ArrayList<>(fieldsSize);
+            for (int j = 0; j < fieldsSize; j++) {
+                list.add("?");
+            }
+            Joiner.on(",").appendTo(sqlBuilder, list);
+
+            sqlBuilder.append(")");
+
+            insertSql = sqlBuilder.toString();
+        }
     }
 }

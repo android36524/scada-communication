@@ -30,17 +30,22 @@ public class OffLimitsRecordDaoImpl extends BaseDaoImpl<OffLimitsRecord> impleme
 
     @Override
     public void updateAll(List<OffLimitsRecord> list) {
-        Object[][] params = new Object[list.size()][2];
+        final Object[][] params = new Object[list.size()][2];
         for (int i = 0; i < params.length; i++) {
             OffLimitsRecord record = list.get(i);
             params[i] = new Object[]{record.getResumeTime(), record.getId()};
         }
-        getDbUtilsTemplate().batchUpdate(updateSql, params);
+        dbUtilsTemplate.getDbExecutorService().execute(new Runnable() {
+            @Override
+            public void run() {
+                getDbUtilsTemplate().batchUpdate(updateSql, params);
+            }
+        });
     }
 
     @Override
     public void insertAll(List<OffLimitsRecord> list) {
-        Object[][] params = new Object[list.size()][9];
+        final Object[][] params = new Object[list.size()][9];
         for (int i = 0; i < params.length; i++) {
             OffLimitsRecord record = list.get(i);
             record.setPersisted(true);
@@ -51,7 +56,12 @@ public class OffLimitsRecordDaoImpl extends BaseDaoImpl<OffLimitsRecord> impleme
                     record.getType() ? 1 : 0, record.getActionTime(), record.getResumeTime()
             };
         }
-        getDbUtilsTemplate().batchUpdate(insertSql, params);
+        dbUtilsTemplate.getDbExecutorService().execute(new Runnable() {
+            @Override
+            public void run() {
+                getDbUtilsTemplate().batchUpdate(insertSql, params);
+            }
+        });
     }
 
     @Override

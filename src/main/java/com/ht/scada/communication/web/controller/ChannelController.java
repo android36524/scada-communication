@@ -1,30 +1,26 @@
-package com.ht.scada.communication.web;
+package com.ht.scada.communication.web.controller;
 
 import com.ht.scada.communication.CommunicationManager;
 import com.ht.scada.communication.entity.ChannelInfo;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.WebContext;
+import org.lime.guice.mvc.views.thymeleaf.annotations.ThymeleafView;
+import org.zdevra.guice.mvc.annotations.Controller;
+import org.zdevra.guice.mvc.annotations.Path;
 
-import javax.servlet.ServletContext;
+import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-public class ChannelController implements IGTVGController {
+@Controller
+@Singleton
+public class ChannelController {
 
-    public ChannelController() {
-        super();
-    }
-
-    public void process(
-            final HttpServletRequest request, final HttpServletResponse response,
-            final ServletContext servletContext, final TemplateEngine templateEngine)
+    @Path("/channels") @ThymeleafView("channels")
+    public void process( HttpServletRequest request)
             throws Exception {
 
-        WebContext ctx = new WebContext(request, response, servletContext, request.getLocale());
-        ctx.setVariable("today", Calendar.getInstance());
+        request.setAttribute("today", Calendar.getInstance());
 
         String pageIndexParam = request.getParameter("pageIndex");
         if (pageIndexParam == null) {
@@ -38,18 +34,18 @@ public class ChannelController implements IGTVGController {
         }
         int pageSize = Integer.parseInt(pageSizeParam);
 
-        ctx.setVariable("pageSize", pageSize);
-        ctx.setVariable("pageIndex", pageIndexParam);
+        request.setAttribute("pageSize", pageSize);
+        request.setAttribute("pageIndex", pageIndexParam);
 
         //log.debug("显示采集通道");
         List<ChannelInfo> list = CommunicationManager.getInstance().getChannels();
 
         int count = list.size();
-        ctx.setVariable("pageCount", (count + pageSize - 1) / pageSize);
+        request.setAttribute("pageCount", (count + pageSize - 1) / pageSize);
 //        if (count % pageSize == 0) {
-//            ctx.setVariable("pageCount", count / pageSize);
+//            request.setAttribute("pageCount", count / pageSize);
 //        } else {
-//            ctx.setVariable("pageCount", count / pageSize + 1);
+//            request.setAttribute("pageCount", count / pageSize + 1);
 //        }
         List<ChannelInfo> items = new ArrayList<>(pageSize);
         int index;
@@ -60,9 +56,8 @@ public class ChannelController implements IGTVGController {
             }
             items.add(list.get(index));
         }
-        ctx.setVariable("channels", items);
+        request.setAttribute("channels", items);
 
-        templateEngine.process("channels", ctx, response.getWriter());
     }
 
 }

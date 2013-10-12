@@ -9,7 +9,7 @@ import com.ht.scada.communication.entity.VarGroupInfo;
 import com.ht.scada.communication.entity.VarIOInfo;
 import com.ht.scada.communication.model.EndTagWrapper;
 import com.ht.scada.communication.model.TagVarTplWrapper;
-import com.ht.scada.communication.web.MyGuiceApplicationListener;
+import com.ht.scada.communication.web.MyWebAppContextListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,11 +36,11 @@ class TagCfgManager {
     private List<EndTag> endTagList;
 
     private TagCfgManager() {
-        endTagDao = MyGuiceApplicationListener.injector.getInstance(EndTagDao.class);
-        varGroupInfoDao = MyGuiceApplicationListener.injector.getInstance(VarGroupInfoDao.class);
-        varIOInfoDao = MyGuiceApplicationListener.injector.getInstance(VarIOInfoDao.class);
-        tagVarTplDao = MyGuiceApplicationListener.injector.getInstance(TagVarTplDao.class);
-        varGroupDataDao = MyGuiceApplicationListener.injector.getInstance(VarGroupDataDao.class);
+        endTagDao = MyWebAppContextListener.injector.getInstance(EndTagDao.class);
+        varGroupInfoDao = MyWebAppContextListener.injector.getInstance(VarGroupInfoDao.class);
+        varIOInfoDao = MyWebAppContextListener.injector.getInstance(VarIOInfoDao.class);
+        tagVarTplDao = MyWebAppContextListener.injector.getInstance(TagVarTplDao.class);
+        varGroupDataDao = MyWebAppContextListener.injector.getInstance(VarGroupDataDao.class);
     }
 
     /**
@@ -62,19 +62,20 @@ class TagCfgManager {
         endTagList = endTagDao.getAll();
 
         // TODO 测试完删除
-/*        EndTag end = endTagList.get(0);
-        for (int i = 6; i < 2000; i++) {
-            EndTag endTag = new EndTag();
-            endTag.setCode(end.getCode() + "-" + i);
-            endTag.setChannelIdx(i + 1);
-            endTag.setDeviceAddr(end.getDeviceAddr());
-            endTag.setId(end.getId());
-            endTag.setName(end.getName());
-            endTag.setSubType(end.getSubType());
-            endTag.setType(end.getType());
-            endTag.setTplName(end.getTplName());
-            endTagList.add(endTag);
-        }*/
+//        EndTag end = endTagList.get(0);
+//        int channelLen = Config.INSTANCE.getConfig().getInt("test.channelSize", 500);
+//        for (int i = 6; i < channelLen; i++) {
+//            EndTag endTag = new EndTag();
+//            endTag.setCode(end.getCode() + "-" + i);
+//            endTag.setChannelIdx(i + 1);
+//            endTag.setDeviceAddr(end.getDeviceAddr());
+//            endTag.setId(end.getId());
+//            endTag.setName(end.getName());
+//            endTag.setSubType(end.getSubType());
+//            endTag.setType(end.getType());
+//            endTag.setTplName(end.getTplName());
+//            endTagList.add(endTag);
+//        }
         // todo:end
 
         Map<Integer, List<VarIOInfo>> ioInfoListMap = new HashMap<>();

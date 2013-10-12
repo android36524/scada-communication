@@ -26,7 +26,7 @@ public class YxRecordDaoImpl extends BaseDaoImpl<YxRecord> implements YxRecordDa
         if (records.isEmpty()) {
             return;
         }
-        Object[][] params = new Object[records.size()][6];
+        final Object[][] params = new Object[records.size()][];
         for (int i = 0; i < records.size(); i++) {
             YxRecord record = records.get(i);
             params[i] = new Object[]{
@@ -34,7 +34,12 @@ public class YxRecordDaoImpl extends BaseDaoImpl<YxRecord> implements YxRecordDa
                     record.getCode(), record.getName(),
                         record.getInfo(), record.getValue() ? 1 : 0, new Timestamp(record.getDatetime().getTime())};
         }
-        getDbUtilsTemplate().batchUpdate(insertSql, params);
+        dbUtilsTemplate.getDbExecutorService().execute(new Runnable() {
+            @Override
+            public void run() {
+                getDbUtilsTemplate().batchUpdate(insertSql, params);
+            }
+        });
     }
 
     @Override

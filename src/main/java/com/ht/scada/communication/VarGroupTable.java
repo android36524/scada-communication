@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created with IntelliJ IDEA.
+ * 分组数据表， 用于记录所有字段名
  *
  * @author: 薄成文 13-8-7 下午6:18
  * To change this template use File | Settings | File Templates.

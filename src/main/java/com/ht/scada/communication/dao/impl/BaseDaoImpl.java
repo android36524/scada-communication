@@ -13,7 +13,7 @@ import javax.inject.Inject;
  */
 public abstract class BaseDaoImpl<T> implements BaseDao<T> {
 
-    private DbUtilsTemplate dbUtilsTemplate;
+    protected DbUtilsTemplate dbUtilsTemplate;
 
     @Inject
     @Override

@@ -6,16 +6,17 @@ import com.ht.scada.common.tag.util.VarGroupEnum;
 import com.ht.scada.common.tag.util.VarSubTypeEnum;
 import com.ht.scada.common.tag.util.VarTypeEnum;
 import com.ht.scada.communication.DataBaseManager;
-import com.ht.scada.communication.entity.VarGroupData;
 import com.ht.scada.communication.entity.*;
 import com.ht.scada.communication.service.HistoryDataService;
 import com.ht.scada.communication.service.RealtimeDataService;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class EndTagWrapper {
     private static final Logger log = LoggerFactory.getLogger(EndTagWrapper.class);
@@ -38,15 +39,12 @@ public class EndTagWrapper {
     /**
      * 遥信、遥测、遥脉实时数据暂存
      */
-    private Map<String, String> realtimeDataMap = new HashMap<>(256);
+    private Map<String, String> realtimeDataMap = new ConcurrentHashMap<>(256);
     /**
      *遥测数组数据暂存
      */
-    private Map<String, String> realtimeYcArrayDataMap = new HashMap<>(16);
+    private Map<String, String> realtimeYcArrayDataMap = new ConcurrentHashMap<>(16);
 
-    /**
-     * TODO: 包括数组变量, 此种做法可能会造成错误的操作, 暂时没有更好的办法
-     */
     private final List<YcTagVar> ycVarList = new ArrayList<>();
     private final List<YmTagVar> ymVarList = new ArrayList<>();
     private final List<YxTagVar> yxVarList = new ArrayList<>();
@@ -130,7 +128,7 @@ public class EndTagWrapper {
                     break;
                 case QT:
                     DataType dataType = tplWrapper.getTagVarTpl().getDataType();
-                    if (dataType == DataType.INT16_ARRAY) {//遥测数组变量也加入遥测列表
+                    if (dataType == DataType.INT16_ARRAY) {//遥测数组
                         YcTagVar tagVar = createYcTagVar(ioInfoList, tplWrapper);
                         ycArrayVarList.add(tagVar);
                         if (varGroupWrapper != null) {
@@ -180,7 +178,7 @@ public class EndTagWrapper {
         for (VarGroupEnum varGroup : varGroupToRemove) {
             varGroupWrapperMap.remove(varGroup);
         }
-	}
+    }
 
     public void updateRtuStatus(boolean status, Date date) {
         if (rtuStatusVar != null) {
@@ -301,7 +299,7 @@ public class EndTagWrapper {
      */
     public void persistRtuHistoryData() {
         if (!this.historyGroupDataMap.isEmpty()) {
-            log.debug("{} - 保存RTU历史数据共{}个", endTag.getName(), this.historyGroupDataMap.size());
+            log.info("{} - 保存RTU历史数据共{}个", endTag.getName(), this.historyGroupDataMap.size());
             historyDataService.saveVarGroupData(this.historyGroupDataMap.values());
             this.historyGroupDataMap.clear();
         }
@@ -312,6 +310,12 @@ public class EndTagWrapper {
      * @param record
      */
     public void addFaultRecord(FaultRecord record, boolean pushMessage) {
+        if (record.getResumeTime() == null) {
+            log.info("故障报警：{}-{}-{}", record.getEndName(), record.getTagName(), record.getInfo());
+        } else {
+            log.info("故障报警恢复：{}-{}-{}", record.getEndName(), record.getTagName(), record.getInfo());
+        }
+
         historyDataService.saveOrUpdateFaultRecord(record);
         if (pushMessage) {
             if (record.getResumeTime() == null) {// 故障报警
@@ -323,6 +327,11 @@ public class EndTagWrapper {
     }
 
     public void addOffLimitsRecord(OffLimitsRecord record, boolean pushMessage) {
+        if (record.getResumeTime() == null) {
+            log.info("遥测越限：{}-{}-{}", record.getEndName(), record.getTagName(), record.getInfo());
+        } else {
+            log.info("遥测越限恢复：{}-{}-{}", record.getEndName(), record.getTagName(), record.getInfo());
+        }
         historyDataService.saveOrUpdateOffLimitsRecord(record);
         if (pushMessage) {
             if (record.getResumeTime() == null) {// 越限报警
@@ -334,6 +343,7 @@ public class EndTagWrapper {
     }
 
     public void addYxData(YxRecord record, boolean pushMessage) {
+        log.info("遥信变位：{}-{}-{}", record.getEndName(), record.getTagName(), record.getValue());
         historyDataService.saveYXData(record);
         if (pushMessage) {//推送消息
             realtimeDataService.yxChanged(record);
@@ -347,12 +357,22 @@ public class EndTagWrapper {
             return;
         }
 
+        for (YcTagVar var : wrapper.getYcArrayVarList()) {// 遍历该节点下的所有变量，并进行处理
+            if (var.getLastArrayValue() != null) {
+                realtimeYcArrayDataMap.put(var.getTpl().getVarName(), Joiner.on(',').join(ArrayUtils.toObject(var.getLastArrayValue())));
+            }
+        }
+
+        if (wrapper.getVarGroupInfo().getIntvl() < 0) {
+            return;
+        }
+
         assert datetime != null;
 
         int interval = wrapper.getVarGroupInfo().getIntvl();
-        int minute = interval <= 0 ? -1 : LocalDateTime.fromDateFields(datetime).getMinuteOfHour() / interval * interval;
+        int minute = interval <= 0 ? wrapper.getLastMinute() : LocalDateTime.fromDateFields(datetime).getMinuteOfHour() / interval * interval;
         //log.debug("{}-{}-{}", wrapper.getVarGroupInfo().getName().getValue(), interval, minute);
-        if (interval <= 0 || (wrapper.getLastMinute() != minute)) {
+        if (interval == 0 || (wrapper.getLastMinute() != minute)) {
             log.debug("生成分组历史数据:{}-{}", endTag.getName(), varGroup.getValue());
             wrapper.setLastMinute(minute);
             VarGroupData data = new VarGroupData();
@@ -368,14 +388,10 @@ public class EndTagWrapper {
                     data.getYcValueMap().put( var.getTpl().getVarName(), var.getLastYcValue());
                 }
             }
+
+            // 遥测数组
             for (YcTagVar var : wrapper.getYcArrayVarList()) {// 遍历该节点下的所有变量，并进行处理
                 if (var.getLastArrayValue() != null) {
-                    List<String> list = new ArrayList<>(var.getLastArrayValue().length);
-                    for (int i = 0; i < var.getLastArrayValue().length; i++) {
-                        float v = var.getLastArrayValue()[i];
-                        list.add(Float.toString(v));
-                    }
-                    realtimeYcArrayDataMap.put(var.getTpl().getVarName(), Joiner.on(',').join(list));
                     data.getArrayValueMap().put(var.getTpl().getVarName(), var.getLastArrayValue());
                 }
             }
@@ -386,16 +402,19 @@ public class EndTagWrapper {
                 }
             }
 
+            /**
+             * 遥信数据里包括了RTU状态，该值为系统添加，不通过采集获取
+             */
             if (!data.getYcValueMap().isEmpty()
                     || !data.getYmValueMap().isEmpty()
                     || !data.getArrayValueMap().isEmpty()
-                    || !data.getYxValueMap().isEmpty()) {
+                    || data.getYxValueMap().size() > 1) {
                 data.setCode(endTag.getCode());
                 data.setGroup(varGroup);
                 data.setDatetime(datetime);
 
+                log.debug("{}({}) : 保存分组数据-{}", endTag.getName(), endTag.getCode(), varGroup.getValue());
                 historyDataService.saveVarGroupData(data);
-                log.debug("加入分组存储队列：{}({})-{}", endTag.getName(), endTag.getCode(), varGroup);
             }
         }
     }

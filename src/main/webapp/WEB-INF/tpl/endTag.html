@@ -58,7 +58,7 @@
                         <td th:text="${yxVar.lastYxValue}">0</td>
                     </tr>
                 </table>
-                <table class="dataintable" th:if="${not #lists.isEmpty(varGroup.ycVarList)}" style="float: left; margin-right: 5px;">
+                <table class="dataintable" th:if="${not (#lists.isEmpty(varGroup.ycVarList) and #lists.isEmpty(varGroup.ycArrayVarList))}" style="float: left; margin-right: 5px;">
                     <tr>
                         <th>遥测</th> <th>变量值</th>
                     </tr>
@@ -68,7 +68,7 @@
                         <!--<td th:text="${#numbers.arrayFormatDecimal(ycVar.lastArrayValue, 3, 2)}"-->
                             <!--th:if="${#objects.nullSafe(ycVar.lastArrayValue, #{false})}">23,324,324,23</td>-->
                     </tr>
-                    <tr th:each="ycVar : ${varGroup.ycVarList}" th:if="${ycVar.lastArrayValue}">
+                    <tr th:each="ycVar : ${varGroup.ycArrayVarList}" th:if="${ycVar.lastArrayValue}">
                         <td th:text="${ycVar.tpl.tagName}">变量名</td>
                         <td>
                             <span name="tooltip">查看遥测数组</span>

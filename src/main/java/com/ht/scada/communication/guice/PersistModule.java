@@ -12,6 +12,9 @@ import com.ht.scada.communication.service.HistoryDataService;
 import com.ht.scada.communication.service.RealtimeDataService;
 import com.ht.scada.communication.service.impl.HistoryDataServiceImpl2;
 import com.ht.scada.communication.service.impl.RealtimeDataServiceImpl;
+import oracle.kv.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
@@ -24,8 +27,8 @@ import javax.sql.DataSource;
  * To change this template use File | Settings | File Templates.
  */
 public class PersistModule extends AbstractModule {
+    private static final Logger log = LoggerFactory.getLogger(PersistModule.class);
 
-    @Override
     protected void configure() {
         bind(DbUtilsTemplate.class);
         bind(ChannelInfoDao.class).to(ChannelInfoDaoImpl.class).in(Singleton.class);
@@ -47,24 +50,25 @@ public class PersistModule extends AbstractModule {
 
         JedisPoolConfig jedisPoolConfig =new JedisPoolConfig();//Jedis池配置
         jedisPoolConfig.setMaxActive(Config.INSTANCE.getRedisMaxActive());// 最大活动的对象个数
-        jedisPoolConfig.setMaxIdle(Config.INSTANCE.getRedisMaxIdle());// 对象最大空闲时间
+        jedisPoolConfig.setMaxIdle(Config.INSTANCE.getRedisMaxIdle());// 对象最大空闲
         jedisPoolConfig.setMaxWait(Config.INSTANCE.getRedisMaxWait());// 获取对象时最大等待时间
+        jedisPoolConfig.setMinIdle(1);
         //config.setTestOnBorrow(true);
         if (Config.INSTANCE.getRedisPassword() != null) {
             return new JedisPool(jedisPoolConfig, Config.INSTANCE.getRedisHost(), Config.INSTANCE.getRedisPort(),
                     Config.INSTANCE.getRedisTimeout(), Config.INSTANCE.getRedisPassword());
         } else {
-            return new JedisPool(jedisPoolConfig, Config.INSTANCE.getRedisHost(), Config.INSTANCE.getRedisPort());
+            return new JedisPool(jedisPoolConfig, Config.INSTANCE.getRedisHost(), Config.INSTANCE.getRedisPort(), Config.INSTANCE.getRedisTimeout());
         }
     }
 
     @Provides @Singleton
     DataSource provideDataSource() {
         DruidDataSource dataSource = new DruidDataSource();
-        dataSource.setMaxWait(60000);
-        dataSource.setMaxActive(20);
-        dataSource.setMinIdle(1);
-        dataSource.setInitialSize(1);
+        dataSource.setMaxWait(Config.INSTANCE.getConfig().getLong("jdbc.maxWait", 120000));
+        dataSource.setMaxActive(Config.INSTANCE.getConfig().getInt("jdbc.maxActive", 200));
+        dataSource.setMinIdle(Config.INSTANCE.getConfig().getInt("jdbc.minIdle", 1));
+        dataSource.setInitialSize(Config.INSTANCE.getConfig().getInt("jdbc.initialSize", 10));
         dataSource.setUrl(Config.INSTANCE.getConfig().getString("jdbc.url"));
         dataSource.setUsername(Config.INSTANCE.getConfig().getString("jdbc.username"));
         dataSource.setPassword(Config.INSTANCE.getConfig().getString("jdbc.password"));
@@ -80,5 +84,21 @@ public class PersistModule extends AbstractModule {
         }
 
         return dataSource;
+    }
+
+    @Provides @Singleton
+    KVStore provideKvStore() {
+
+        KVStoreConfig kvConfig = new KVStoreConfig(Config.INSTANCE.getKvStoreName(), Config.INSTANCE.getKvHostPort());
+        kvConfig.setRequestLimit(RequestLimitConfig.getDefault());
+
+        KVStore kvStore = null;
+
+        try {
+            kvStore = KVStoreFactory.getStore(kvConfig);
+        } catch (FaultException e) {
+            log.error("无法连接到时任何一个节点", e);
+        }
+        return kvStore;
     }
 }
